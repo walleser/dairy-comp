@@ -15,60 +15,29 @@ library(forcats)
 library(lubridate)
 
 
-#functions
-
-### combining multiple excel files
-data_gen_fun <-function(file_paths,drop_dup=T){
-df_start <- read_excel(file_paths[1], guess_max = 1000000)
-
-for (file in file_paths[2:length(file_paths)]) {
-  print(file)
-  if (is.na(file)){
-    break
-    }
-  df_start<- bind_rows(df_start,read_excel(file, guess_max = 1000000))
-}
-if(drop_dup){
-#removing accidental duplicate values, covers for accidental date overlaps in excel files
-df_start <- df_start %>% distinct()
-}
-df_start}
-
 ```
 
-1. excel can only handle files with less than approx 60k lines, need to generate xls files of less than this length. This can require making multiple save files for shorter date periods in R
-
-2. Open and resave the xls file in Excel for compatibility using `readxl`.
-
-3. read in and combine files
 ```{r}
+
 
 # user changes
 
 #set this to directory where this file and excel files are located
-wd = "~/projects/dairy_comp/turkey_creek"
+wd = "~/XXX/XXX"
 
 #set date from dairycomp extraction
 dairy_comp_extraction_date = lubridate::date("2022-08-09")
 
-output_file_header = 'turkcreek'
+output_file_header = 'XXXX_farm_name'
 
 #set and print wd
 setwd(wd)
 getwd()
 
-#list all of the excel files as characters, must have the same exact column structure
-file_paths = c("turkey_creek.xls","turkey_creek2.xls","turkey_creek3.xls")
 
-#creates single dataframe and removes duplicate values from dataframes
-df_start <- data_gen_fun(file_paths,drop_dup = T)
+df_start <- read_csv(file = "XXX.CSV",guess_max = 100000)
+problems(df_start)
 
-
-#TODO:
-#removes lactation 0 animals from data
-drop_lact_0 = T
-#combines protocol and remark into single variable named remark
-append_remark = T
 
 ```
 column names assumed to be in the dataset are:
@@ -83,9 +52,6 @@ use select to drop any unneeded additional variables. Can also create placeholde
 check_cols <- c("ID","LACT","LCTGP","FDAT","BDAT","FCDAT","RC","DRYLG","DDRY",
                 "PDCC","PDIM","EASE","CNUM","CLIVE","CSEX","FTDIM","FSTPJ","FSTBF",
                 "FSTPR","PEAKM","DCAR",	"PR305","LOG1",	"Event","Date", "Remark","Protocols","Technician")       
-
-#view event names
-#df_start %>% glimpse()
 
 event_names <-df_start%>% select(Event) %>% unique()
 
@@ -105,18 +71,19 @@ setdiff(col_names,check_cols)
 ```{r}
 
 
-#renaming variables to match standardized inputs
-df_start <- df_start %>%
-  rename(FDAT = FRSH) %>%
-  rename(BDAT = BIRTH) 
+### renaming variables to match standardized inputs
 
-#generate an empty placeholder columns
-#add additional variables as necessary
+# df_start <- df_start %>%
+#   rename(FDAT = FDAT)
 
-df_start <- df_start %>% mutate(PR305 = NA)
+### generate an empty placeholder columns
+### add additional variables as necessary
+
+#df_start <- df_start %>% mutate(PR305 = NA)
 
 
-#drop additional variables that are not needed
+### drop additional variables that are not needed
+
 #df_start <- df_start %>% select(-EXAMPLE_COL)
 
 
@@ -127,6 +94,12 @@ setdiff(check_cols,col_names)
 print("extra columns")
 setdiff(col_names,check_cols)
 
+```
+
+# What events exist for this dairy
+
+```{r}
+df_start %>% select(Event) %>% arrange() %>% table() 
 ```
 
 #check that the names of events match the appropriate value for 
@@ -146,10 +119,11 @@ df.wide <-  df_start %>%
                          Event == 'SCOURS' ~ 'DIARHEA',
                          Event == 'LAME' ~ 'LAME',
                          Event == 'FOOTRIM' ~ 'FOOTRIM',
-                         Event == 'SICK' ~ 'ILLMISC',
+                         Event == 'ILLMISC' ~ 'ILLMISC',
                          Event == 'MAST' ~ 'MAST',
-                         TRUE ~ 'NA')) %>% 
+                         TRUE ~ Event)) %>% 
   filter(Event != 'NA') %>%
+  
   #appending protocol info to event info
   unite(col=Remark,Remark,Protocols,sep = '_')%>% # this line combines columns remark and protocols as dairy uses this 
   group_by(ID, LACT, Event) %>% 
@@ -198,9 +172,6 @@ sum_df<-
 ```{r}
 sum_df %>% names()
 ```
-
-
-
 ```{r}
 comp_df <- sum_df %>%  
   ungroup() %>% 
@@ -220,52 +191,8 @@ comp_df <- sum_df %>%
         !is.na(DATS) ~ REMS,
         !is.na(DATD) ~ REMD,
         TRUE ~ NA_character_
-      ),
-    `1DMF` = MF_1_Date,
-    REMMF = MF_1_Remark,
-    XMF,
-    `1DRP` = RP_1_Date,
-    REMRP = RP_1_Remark,
-    XRP,
-    `1DME` = METR_1_Date,
-    REMME = METR_1_Remark,
-    XMETR,
-    `1DKE` = KETOSIS_1_Date,
-    REMKE = KETOSIS_1_Remark,
-    XKET,
-    `1DDA` = DA_1_Date,
-    REMDA = DA_1_Remark,
-    XDA,
-    `1DPN` = PNEU_1_Date,
-    REMPN = PNEU_1_Remark,
-    XPNEU,
-    `1DDIA` = DIARHEA_1_Date, 
-    REMDI = DIARHEA_1_Remark,
-    XDIAR,
-    `1DFT` = FOOTRIM_1_Date,
-    REMFT = FOOTRIM_1_Remark,
-    XFTRM,
-    `1DLAM` = LAME_1_Date,
-    `1DLAM` = as_date(`1DLAM`),
-    REMLM = LAME_1_Remark,
-    XLAME,
-    `1DMA` = MAST_1_Date,
-    REMMA = MAST_1_Remark,
-    XMAST,
-    # data dictionary definition of ILLMISC
-    `1DIL` = ILLMISC_1_Date,
-    REMIL = ILLMISC_1_Remark,
-    XILL
-    # # spreadsheet definition of ILLMISC
-    # `1DOF` = SICK_1_Date,
-    # REMOF = SICK_1_Remark,
-    # XOF
-  )
-
-```
-
-```{r}
-comp_df %>%filter(!nchar(FDAT)< 8) %>% select(FDAT)
+      ))%>% 
+  select(-SOLD_1_Date,-SOLD_1_Remark,-DIED_1_Date,-DIED_1_Remark)
 ```
 
 
@@ -274,140 +201,102 @@ df.master <-
   comp_df %>%
   filter(!is.na(FCDAT)&!is.na(BDAT)&!is.na(FDAT))%>%
   filter((!nchar(FCDAT)< 8)&(!nchar(BDAT)< 8)&(!nchar(FDAT)<8))%>%
-  mutate_at(vars(ID,LCTGP,LCTGP,RC), forcats::as_factor) %>% 
+  mutate_at(vars(ID,RC), forcats::as_factor) %>% 
   mutate_at(vars(FCDAT,BDAT,FDAT), lubridate::mdy) %>%
-  mutate_at(vars(starts_with("1D"), DATS, DATD,), lubridate::date)%>%
-  mutate_at(vars(FSTBF:PEAKM, DRYLG,LOG1,PR305), as.numeric) %>%
-  transmute(
-    ID,
-    LACT,
+  mutate_at(vars(ends_with("Date"), DATS, DATD,), lubridate::date)%>%   
+  mutate_at(vars(FSTBF:PEAKM, DRYLG,LOG1,), as.numeric) %>%
+  mutate(
     LCTGP = forcats::as_factor(case_when(LACT == 0 ~ 0,
                       LACT == 1 ~ 1,
                       LACT == 2 ~ 2,
                       LACT >= 3 ~ 3)),
-    FDAT,
     FRESH_MONTH = format_ISO8601(FDAT, precision = "ym"),
     DIM = ifelse(is.na(DATR),dairy_comp_extraction_date - FDAT,DATR - FDAT),
     `FRESH 372 TO 7` = ifelse(between(DIM, 7, 372), 1, 0),
     `FRESH 386 TO 21` = ifelse(between(DIM, 21, 386), 1, 0),
     `FRESH 425 TO 60` = ifelse(between(DIM, 60, 425), 1, 0),
-    BDAT,
-    `AGE_AT_CALVING_(MONTHS)` = interval(BDAT, FDAT) %/% months(1),
-    `AGE_AT_CALVING_1ST_LACT_(MONTHS)` = interval(BDAT, FCDAT) %/% months(1),
-    TO_CLOSE_UP_PEN_DATE = PRFRESH,
-    DAYS_IN_CLOSE_UP = FDAT - TO_CLOSE_UP_PEN_DATE,
-    REPRO_CODE = RC,
-    PREV_DRY_OFF_LOG_SCC = DRYLG,
-    DRY_DAYS = ifelse(LACT == 1,NA,DDRY),
-    PREV_DAYS_CARRIED_CALF = PDCC,
-    ABORT = ifelse(PREV_DAYS_CARRIED_CALF < 260, 1, 0),
-    PREV_DAYS_IN_MILK = ifelse(LACT == 1,NA,PDIM),
-    CALVING_EASE_SCORE = EASE,
     
+    BIRTH_DATE = BDAT,
+    `AGE_AT_CALVING_(MONTHS)` = interval(BIRTH_DATE, FDAT) %/% months(1),
+    `AGE_AT_CALVING_1ST_LACT_(MONTHS)` = interval(BIRTH_DATE, FCDAT) %/% months(1), 
+    DDRY = ifelse(LACT == 1,NA,DDRY),
+    ABORT = ifelse(PDCC < 260, 1, 0),
+    PDIM = ifelse(LACT == 1,NA,PDIM),
     
-    #calving ease may be different by herd and will need to be replaced
-    `CALVING_EASE_>=2` = ifelse(CALVING_EASE_SCORE >= 2, 1, 0),
-    `CALVING_EASE_>=3` = ifelse(CALVING_EASE_SCORE >= 3, 1, 0),
-    CALVES_BORN_NUM = ifelse((CNUM == 0 & CALVING_EASE_SCORE >0),NA,CNUM),
-    TWINS = ifelse(CALVES_BORN_NUM > 1, 1, ifelse(CALVES_BORN_NUM == 1,0,NA)),
-    CALVES_ALIVE_DEAD = CLIVE,
+    #calving variables
+    `CALVING_EASE_>=2` = ifelse(EASE >= 2, 1, 0),
+    `CALVING_EASE_>=3` = ifelse(EASE >= 3, 1, 0),
+    CNUM = ifelse((CNUM == 0 & EASE >0),NA,CNUM),
+    TWINS = ifelse(CNUM > 1, 1, ifelse(CNUM == 1,0,NA)),
     STILLBIRTH = ifelse(str_detect(CLIVE, "D"), 1, 0),
     CALF_SEX = CSEX,
-    MALE_CALF = ifelse(str_detect(CALF_SEX, "M"), 1, 0),
-    `1ST_TEST_DIM` = FTDIM,
-    `1ST_TEST_PROJ_MILK` = FSTPJ,
-    `1ST_TEST_MILK_FAT` = FSTBF,
-    `1ST_TEST_MILK_PROT` = FSTPR,
-    `1ST_TEST_FAT_PROT_RATIO` = `1ST_TEST_MILK_FAT`/`1ST_TEST_MILK_PROT`,
-    `1ST_TEST_FPR>1.4` = ifelse(`1ST_TEST_FAT_PROT_RATIO` > 1.4, 1, 0),
-    `1ST_LOG_SCC` = LOG1,
-    `PREV_305ME` = ifelse(LACT != 1,PR305,NA),
-    PEAK_MILK = PEAKM,
-    SOLD_DATE = DATS,
-    SOLD = ifelse(!is.na(SOLD_DATE), 1, 0),
-    SOLD_DIM = SOLD_DATE - FDAT,
-    `SOLD<=60` = ifelse(!is.na(SOLD_DATE), ifelse(SOLD_DIM <= 60, 1, 0), 0),
-    SOLD_REM = REMS,
-    DIED_DATE = DATD,
-    DIED = ifelse(!is.na(DIED_DATE), 1, 0),
-    DIED_DIM = DIED_DATE - FDAT,
-    `DIED<=60` = ifelse(!is.na(DIED_DATE),ifelse(DIED_DIM <= 60, 1, 0), 0),
-    DIED_REM = REMD,
-    REMOVED_DATE = DATR,
-    REMVD = ifelse(!is.na(REMOVED_DATE), 1, 0),
-    REMVD_DIM = REMOVED_DATE - FDAT,
-    `REMVD<=60` = ifelse(!is.na(REMOVED_DATE),ifelse(REMVD_DIM <= 60, 1, 0), 0),
-    REMOVED_REM = REMR,
-    MLK_FVR_DATE_1ST = `1DMF`,
-    MLK_FVR = ifelse(!is.na(MLK_FVR_DATE_1ST), 1, 0),
-    MLK_FVR_DIM = MLK_FVR_DATE_1ST - FDAT,
-    `MLK_FVR<=7` = ifelse(!is.na(MLK_FVR_DATE_1ST), ifelse(MLK_FVR_DIM <= 7, 1, 0), 0),
-    MLK_FVR_REM_1ST = REMMF,
-    TIMES_MLK_FVR = XMF,
-    RP_DATE_1ST = `1DRP`,
-    RP = ifelse(!is.na(RP_DATE_1ST), 1, 0),
-    RP_DIM = RP_DATE_1ST - FDAT,
-    `RP<=7` = ifelse(!is.na(RP_DATE_1ST),ifelse(RP_DIM <= 7, 1, 0), 0),
-    RP_REM_1ST = REMRP,
-    TIMES_RP = XRP,
-    METR_DATE_1ST = `1DME`,
-    METR = ifelse(!is.na(METR_DATE_1ST), 1, 0),
-    METR_DIM = METR_DATE_1ST - FDAT,
-    `METR<=21` = ifelse(!is.na(METR_DATE_1ST), ifelse(METR_DIM <= 21, 1, 0), 0),
-    METR_REM_1ST = REMME,
-    TIMES_METR = XMETR,
-    KET_DATE_1ST = `1DKE`,
-    KET = ifelse(!is.na(KET_DATE_1ST), 1, 0),
-    KET_DIM = KET_DATE_1ST - FDAT,
-    `KET<=60` = ifelse(!is.na(KET_DATE_1ST), ifelse(KET_DIM <= 60, 1, 0), 0),
-    KET_REM_1ST = REMKE,
-    TIMES_KET = XKET,
-    DA_DATE_1ST = `1DDA`,
-    DA = ifelse(!is.na(DA_DATE_1ST), 1, 0),
-    DA_DIM = DA_DATE_1ST - FDAT,
-    `DA<=60` = ifelse(!is.na(DA_DATE_1ST), ifelse(DA_DIM <= 60, 1, 0), 0),
-    DA_REM_1ST = REMDA,
-    TIMES_DA = XDA,
-    PNEU_DATE_1ST = `1DPN`,
-    PNEU = ifelse(!is.na(PNEU_DATE_1ST), 1, 0),
-    PNEU_DIM = PNEU_DATE_1ST - FDAT,
-    `PNEU<=60` = ifelse(!is.na(PNEU_DATE_1ST),ifelse(PNEU_DIM <= 60, 1, 0), 0),
-    PNEU_REM_1ST = REMPN,
-    TIMES_PNEU = XPNEU,
-    DIARR_DATE_1ST = `1DDIA`,
-    DIARR = ifelse(!is.na(DIARR_DATE_1ST), 1, 0),
-    DIARR_DIM = DIARR_DATE_1ST - FDAT,
-    `DIARR<=60` = ifelse(!is.na(DIARR_DATE_1ST),ifelse(DIARR_DIM <= 60, 1, 0), 0),
-    DIARR_REM_1ST = REMDI,
-    TIMES_DIARR = XDIAR,
-    LAME_DATE_1ST = `1DLAM`,
-    LAME = ifelse(!is.na(LAME_DATE_1ST), 1, 0),
-    LAME_DIM = LAME_DATE_1ST - FDAT,
-    `LAME<=60` = ifelse(!is.na(LAME_DATE_1ST), ifelse(LAME_DIM <= 60, 1, 0), 0),
-    LAME_REM_1ST = REMLM,
-    TIMES_LAME = XLAME,
-    FOOTRIM_DATE_1ST = `1DFT`,
-    FTRM = ifelse(!is.na(FOOTRIM_DATE_1ST), 1, 0),
-    FTRM_DIM = FOOTRIM_DATE_1ST - FDAT,
-    `FTRM<=60` = ifelse(FTRM_DIM <= 60, 1, 0),
-    `FTRM<=60` = ifelse(!is.na(FOOTRIM_DATE_1ST), ifelse(FTRM_DIM <= 60, 1, 0), 0),
-    FOOTRIM_REM_1ST = REMFT,
-    TIMES_FOOTRIM = XFTRM,
-    MAST_DATE_1ST = `1DMA`,
-    MAST = ifelse(!is.na(MAST_DATE_1ST), 1, 0),
-    MAST_DIM = MAST_DATE_1ST - FDAT,
-    `MAST<=60` = ifelse(!is.na(MAST_DATE_1ST), ifelse(MAST_DIM <= 60, 1, 0), 0),
-    MAST_REM_1ST = REMMA,
-    TIMES_MAST = XMAST,
-    ILLMISC_DATE_1ST = `1DIL`,
-    ILLMISC = ifelse(!is.na(ILLMISC_DATE_1ST), 1, 0),
-    ILLMISC_DIM = ILLMISC_DATE_1ST - FDAT,
+    MALE_CALF = ifelse(str_detect(CSEX, "M"), 1, 0),
+    
+    #generate Fat protein ratio
+    FPR = FSTBF/FSTPR,
+    FPR1.4 = ifelse(FPR > 1.4, 1, 0),
+    
+    #sold
+    SOLD = ifelse(!is.na(DATS), 1, 0),
+    SOLD_DIM = DATS - FDAT,
+    `SOLD<=60` = ifelse(!is.na(DATS), ifelse(SOLD_DIM <= 60, 1, 0), 0),
+    # died
+    DIED = ifelse(!is.na(DATD), 1, 0),
+    DIED_DIM = DATD - FDAT,
+    `DIED<=60` = ifelse(!is.na(DATD),ifelse(DIED_DIM <= 60, 1, 0), 0),
+    # removed
+    REMVD = ifelse(!is.na(DATR), 1, 0),
+    REMVD_DIM = DATR - FDAT,
+    `REMVD<=60` = ifelse(!is.na(DATR),ifelse(REMVD_DIM <= 60, 1, 0), 0),
+    #milk fever
+    MLK_FVR = ifelse(!is.na(MF_1_Date), 1, 0),
+    MLK_FVR_DIM = MF_1_Date - FDAT,
+    `MLK_FVR<=7` = ifelse(!is.na(MF_1_Date), ifelse(MLK_FVR_DIM <= 7, 1, 0), 0),
+    #retained placenta
+    RP = ifelse(!is.na(RP_1_Date), 1, 0),
+    RP_DIM = RP_1_Date - FDAT,
+    `RP<=7` = ifelse(!is.na(RP_1_Date),ifelse(RP_DIM <= 7, 1, 0), 0),
+    #metritis
+    METR = ifelse(!is.na(METR_1_Date), 1, 0),
+    METR_DIM = METR_1_Date - FDAT,
+    `METR<=21` = ifelse(!is.na(METR_1_Date), ifelse(METR_DIM <= 21, 1, 0), 0),
+    #ketosis
+    KET = ifelse(!is.na(KETOSIS_1_Date), 1, 0),
+    KET_DIM = KETOSIS_1_Date - FDAT,
+    `KET<=60` = ifelse(!is.na(KETOSIS_1_Date), ifelse(KET_DIM <= 60, 1, 0), 0),
+    #da
+    DA = ifelse(!is.na(DA_1_Date), 1, 0),
+    DA_DIM = DA_1_Date - FDAT,
+    `DA<=60` = ifelse(!is.na(DA_1_Date), ifelse(DA_DIM <= 60, 1, 0), 0),
+    #pneumonia
+    PNEU = ifelse(!is.na(PNEU_1_Date), 1, 0),
+    PNEU_DIM = PNEU_1_Date - FDAT,
+    `PNEU<=60` = ifelse(!is.na(PNEU_1_Date),ifelse(PNEU_DIM <= 60, 1, 0), 0),
+    #Diarrhea
+    DIARR = ifelse(!is.na(DIARHEA_1_Date), 1, 0),
+    DIARR_DIM = DIARHEA_1_Date - FDAT,
+    `DIARR<=60` = ifelse(!is.na(DIARHEA_1_Date),ifelse(DIARR_DIM <= 60, 1, 0), 0),
+    #lame
+    LAME = ifelse(!is.na(LAME_1_Date), 1, 0),
+    LAME_DIM = LAME_1_Date - FDAT,
+    `LAME<=60` = ifelse(!is.na(LAME_1_Date), ifelse(LAME_DIM <= 60, 1, 0), 0),
+    #Foot trim
+    FTRM = ifelse(!is.na(FOOTRIM_1_Date), 1, 0),
+    FTRM_DIM = FOOTRIM_1_Date - FDAT,
+    `FTRM<=60` = ifelse(!is.na(FOOTRIM_1_Date), ifelse(FTRM_DIM <= 60, 1, 0), 0),
+    #mastitis
+    MAST = ifelse(!is.na(MAST_1_Date), 1, 0),
+    MAST_DIM = MAST_1_Date - FDAT,
+    `MAST<=60` = ifelse(!is.na(MAST_1_Date), ifelse(MAST_DIM <= 60, 1, 0), 0),
+    #ILLMISC
+    ILLMISC = ifelse(!is.na(ILLMISC_1_Date), 1, 0),
+    ILLMISC_DIM = ILLMISC_1_Date - FDAT,
     `ILLMISC<=60` = ifelse(ILLMISC_DIM <= 60, 1, 0),
-    `ILLMISC<=60` = ifelse(!is.na(ILLMISC_DATE_1ST),ifelse(ILLMISC_DIM <= 60, 1, 0), 0)) %>% 
-  write_csv(paste(output_file_header,'master.csv',sep = '_'))
+    `ILLMISC<=60` = ifelse(!is.na(ILLMISC_1_Date),ifelse(ILLMISC_DIM <= 60, 1, 0), 0),
+  ) %>% 
+  write_csv(paste(output_file_header,'all_events_master.csv',sep = '_'))
 
 ```
-
 
 
 ```{r}
