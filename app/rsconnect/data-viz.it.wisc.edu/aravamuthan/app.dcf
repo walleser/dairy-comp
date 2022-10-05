@@ -1,0 +1,12 @@
+name: app
+title: app
+username: aravamuthan
+account: aravamuthan
+server: data-viz.it.wisc.edu
+hostUrl: https://data-viz.it.wisc.edu/__api__
+appId: 421
+bundleId: 2315
+url: https://data-viz.it.wisc.edu/dairy-comp/
+when: 1664837572.57029
+asMultiple: FALSE
+asStatic: FALSE
