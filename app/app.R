@@ -11,6 +11,9 @@ library(forcats)
 library(GGally)
 library(plotly)
 # library(broom.helpers)
+library(DT)
+library(skimr)
+# library(summarytools)
 
 df_example <- read_csv("example.csv")
 
@@ -25,7 +28,7 @@ regular_color <- "navy"
 
 header <- dashboardHeader(
   title = "DairyComp 9000",
-  tags$li(a(href = "https://github.com/walleser/dairycomp_health",
+  tags$li(a(href = "https://github.com/walleser/dairy-comp",
             img(
               # src = "https://hr.wisc.edu/wp-content/uploads/2019/04/uw-crest-red-300x300.png",
               src = "download (1).jpg",
@@ -42,7 +45,7 @@ sidebar <- dashboardSidebar(
     menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
     menuItem("Regression Analysis", tabName = "regression", icon = icon("chart-line")),
     menuItem("GitHub Repo", icon = icon("file-code-o"), 
-             href = "https://github.com/walleser/dairycomp_health"),
+             href = "https://github.com/walleser/dairy-comp"),
     menuItem("Documentation", tabName = "documentation", icon = icon("book"))
   )
 )
@@ -156,7 +159,32 @@ body <- dashboardBody(
             tags$hr()
             
         )
+      ),
+      
+      ## Outputs ---------------------------------------------------------------
+      column(width = 8,
+             ## Contents
+             box(title = "Contents", width = NULL, solidHeader = TRUE, status = input_element_color,
+                 collapsible = TRUE, collapsed = FALSE,
+                 
+                 # Output: Contents ----
+                 DT::dataTableOutput("contents")
+                 
+             ),
+             
+             ## Summary
+             box(title = "Summary", width = NULL, solidHeader = TRUE, status = input_element_color,
+                 collapsible = TRUE, collapsed = FALSE,
+                 
+                 # Output: Summary ----
+                 verbatimTextOutput("df_summary")
+                 # DT::dataTableOutput("df_summary")
+                 
+                 # htmlOutput("df_summary")
+                 
+             )
       )
+      
     ),
     
     ## Regression Analysis -----------------------------------------------------
@@ -775,8 +803,8 @@ server <- function(input, output) {
              str_length(FCDAT) == 8) %>% 
       mutate_at(vars(ID,RC), forcats::as_factor) %>% 
       mutate_at(vars(BDAT,FDAT,FCDAT), lubridate::mdy) %>%
-      mutate_at(vars(FSTBF,FSTPR,PEAKM,DRYLG,LOG1,LACT,DDRY,PDCC,PDIM,EASE,CNUM), as.numeric) %>%
       mutate_at(vars(CLIVE,CSEX), as.character) %>%
+      mutate_at(vars(FSTBF,FSTPR,PEAKM,DRYLG,LOG1,LACT,DDRY,PDCC,PDIM,EASE,CNUM), as.numeric) %>%
       mutate(
         LCTGP = 
           ifelse(LACT >= 3, 3, LACT) %>% 
@@ -938,9 +966,45 @@ server <- function(input, output) {
       ) %>% 
       group_by(ID) %>% 
       slice_max(LACT) %>% 
-      ungroup()
+      ungroup() %>% 
+      mutate_at(vars(CLIVE, CSEX, CALF_SEX, FRESH_MONTH, `FRESH 372 TO 7`:`FRESH 425 TO 60`, ABORT, `CALVING_EASE_>=2`:`CALVING_EASE_>=3`, TWINS:STILLBIRTH, MALE_CALF, FPR:`ILLMISC<=60`, -ends_with("_DIM")), forcats::as_factor) %>% 
+      mutate_at(vars(RC, CLIVE, CSEX, CALF_SEX, FRESH_MONTH), ~ forcats::fct_relevel(., sort(levels(.)))) %>% 
+      mutate_at(vars(`FRESH 372 TO 7`:`FRESH 425 TO 60`, ABORT, `CALVING_EASE_>=2`:`CALVING_EASE_>=3`, TWINS:STILLBIRTH, MALE_CALF, FPR:`ILLMISC<=60`, -ends_with("_DIM")), ~ forcats::fct_relevel(., c("0", "1")))
     
   })
+  
+  output$contents <- 
+    DT::renderDataTable(
+      {
+        head(df())
+      }, 
+      options = list(scrollX = TRUE)
+    )
+  
+  output$df_summary <-
+    renderPrint(
+      {
+        skimr::skim_without_charts(df())
+      }
+    )
+  
+  # output$df_summary <-
+  #   DT::renderDataTable(
+  #     {
+  #       skimr::skim_without_charts(df())
+  #     }, 
+  #     options = list(scrollX = TRUE)
+  #   )
+  
+  # output$df_summary <- 
+  #   renderUI({
+  #     summarytools::view(summarytools::dfSummary(df()),
+  #                        method = "render",
+  #                        omit.headings = TRUE,
+  #                        footnote = NA,
+  #                        bootstrap.css = FALSE,
+  #                        graph.magnif = 0.8)
+  #   })
   
   df_mod <- reactive({
     req(
@@ -949,9 +1013,7 @@ server <- function(input, output) {
       cancelOutput = TRUE
     )
     
-    df() %>% 
-      mutate_if(is.character, forcats::as_factor) %>% 
-      mutate_if(is.factor, forcats::fct_infreq)
+    df()
     
   })
   
