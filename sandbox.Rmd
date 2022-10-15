@@ -110,8 +110,7 @@ rows_events <-
 ```
 
 ```{r}
-df <- 
-  df %>% 
+df %>% 
   mutate(
     Event = 
       case_when(
@@ -201,8 +200,8 @@ df <-
          str_length(FCDAT) == 8) %>% 
   mutate_at(vars(ID,RC), forcats::as_factor) %>% 
   mutate_at(vars(BDAT,FDAT,FCDAT), lubridate::mdy) %>%
-  mutate_at(vars(FSTBF,FSTPR,PEAKM,DRYLG,LOG1,LACT,DDRY,PDCC,PDIM,EASE,CNUM), as.numeric) %>%
   mutate_at(vars(CLIVE,CSEX), as.character) %>%
+  mutate_at(vars(FSTBF,FSTPR,PEAKM,DRYLG,LOG1,LACT,DDRY,PDCC,PDIM,EASE,CNUM), as.numeric) %>%
   mutate(
     LCTGP = 
       ifelse(LACT >= 3, 3, LACT) %>% 
@@ -364,7 +363,10 @@ df <-
   ) %>% 
   group_by(ID) %>% 
   slice_max(LACT) %>% 
-  ungroup()
+  ungroup() %>% 
+  mutate_at(vars(CLIVE, CSEX, CALF_SEX, FRESH_MONTH, `FRESH 372 TO 7`:`FRESH 425 TO 60`, ABORT, `CALVING_EASE_>=2`:`CALVING_EASE_>=3`, TWINS:STILLBIRTH, MALE_CALF, FPR:`ILLMISC<=60`, -ends_with("_DIM")), forcats::as_factor) %>% 
+  mutate_at(vars(RC, CLIVE, CSEX, CALF_SEX, FRESH_MONTH), ~ forcats::fct_relevel(., sort(levels(.)))) %>% 
+  mutate_at(vars(`FRESH 372 TO 7`:`FRESH 425 TO 60`, ABORT, `CALVING_EASE_>=2`:`CALVING_EASE_>=3`, TWINS:STILLBIRTH, MALE_CALF, FPR:`ILLMISC<=60`, -ends_with("_DIM")), ~ forcats::fct_relevel(., c("0", "1")))
 # %>%
 #   write_csv(str_c(make_clean_names(str_c(output_file_header, "master_last_lact", sep = "_")), ".csv"))
 
