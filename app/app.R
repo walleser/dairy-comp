@@ -14,6 +14,8 @@ library(plotly)
 library(DT)
 library(skimr)
 # library(summarytools)
+library(reactable)
+library(reactablefmtr)
 library(nnet)
 
 df_example <- read_csv("example.csv")
@@ -280,7 +282,8 @@ body <- dashboardBody(
         box(title = "Pivot Table", width = NULL, solidHeader = TRUE, status = input_element_color,
             collapsible = TRUE, collapsed = FALSE,
             
-            tableOutput("pivot_table")
+            # tableOutput("pivot_table")
+            reactableOutput("pivot_table")
             
         ),
 
@@ -288,7 +291,9 @@ body <- dashboardBody(
         box(title = "Odds Ratio", width = NULL, solidHeader = TRUE, status = input_element_color,
             collapsible = TRUE, collapsed = FALSE,
 
-            tableOutput("odds_ratio")
+            # tableOutput("odds_ratio")
+            reactableOutput("odds_ratio")
+            
 
         )
       )
@@ -1276,7 +1281,7 @@ server <- function(input, output) {
     )
   })
   
-  output$pivot_table <- renderTable({
+  df_pivot_table <- reactive({
     req(
       input$file1,
       input$row,
@@ -1286,20 +1291,55 @@ server <- function(input, output) {
     )
     
     df() %>% 
-      tabyl(!! sym(input$row), !! sym(input$column)) %>% 
+      tabyl(!!sym(input$row), !!sym(input$column)) %>% 
       adorn_totals(c("row", "col")) %>% 
-      adorn_percentages("col") %>% 
-      adorn_pct_formatting(rounding = "half up", 
-                           digits = 1) %>% 
-      adorn_ns(position = "front") %>% 
-      adorn_title("combined", 
-                  row_name = input$row, 
-                  col_name = input$column) %>% 
-      as.data.frame()
+      as.data.frame() %>% 
+      rename(row = !!sym(input$row))
     
   })
   
-  output$odds_ratio <- renderTable({
+  output$pivot_table <- renderReactable({
+    req(
+      input$file1,
+      input$row,
+      input$column,
+      df_pivot_table(),
+      cancelOutput = TRUE
+    )
+    
+    pal <- c('#36a1d6', '#76b8de', '#a0bfd9', '#ffffff', '#d88359', '#d65440', '#c62c34')
+    
+    df_pivot_table() %>% 
+      reactable(
+        # columns = list(
+        #   row = colDef(name = input$row,
+        #                style = list(fontWeight = "bold"))
+        # ),
+        columnGroups = list(
+          colGroup(name = input$column, columns = names(.)[-1])
+        ),
+        defaultColDef = colDef(
+          cell = color_tiles(
+            tab, 
+            span = TRUE, 
+            colors = pal, 
+            opacity = 0.75
+          )
+        ),
+        sortable = FALSE,
+        bordered = TRUE,
+      ) %>% 
+      add_legend(
+        tab,
+        col_name = 'Total', 
+        title = 'title', 
+        footer = 'footer', 
+        colors = pal
+      )
+    
+  })
+  
+  df_odds_ratio <- reactive({
     req(
       input$file1,
       input$row,
@@ -1369,6 +1409,59 @@ server <- function(input, output) {
       pivot_wider(names_from = conf.level,
                   values_from = value) %>% 
       rename_at(vars(`2.5`, `97.5`), ~ str_c(., "%"))
+    
+  })
+  
+  output$odds_ratio <- renderReactable({
+    req(
+      input$file1,
+      input$row,
+      input$column,
+      df(),
+      df_odds_ratio(),
+      cancelOutput = TRUE
+    )
+    
+    level.col <- 
+      df() %>% 
+      summarize(levels(!!sym(input$column))) %>% 
+      pull()
+    
+    tab <- 
+      df_odds_ratio() %>% 
+      rename(` OR` = OR) %>% 
+      pivot_wider(names_from = column,
+                  names_glue = "{column} {.value}",
+                  values_from = ` OR`:`97.5%`) %>% 
+      select(row, sort(current_vars())) %>% 
+      rename_at(vars(-row), ~ str_replace(., " OR", "OR")) %>% 
+      mutate(row = str_replace_all(row, input$row, str_c(input$row, ": ")))
+    
+    ls.colDef <- 
+      2:(length(names(tab))) %>% 
+      purrr::map(~ colDef(name = str_split(names(tab)[.x], " ")[[1]][2])) %>% 
+      purrr::set_names(names(tab)[2:(length(names(tab)))])
+    
+    # ls.colDef <- 
+    #   list(
+    #     row = colDef(name = "",
+    #                  style = list(fontWeight = "bold"))
+    #   ) %>% 
+    #   prepend(ls.colDef, before = 1)
+    
+    ls.colGroup <-
+      2:(length(level.col)) %>% 
+      purrr::map(~ colGroup(name = str_c(input$column, ": ", level.col[.x]), columns = names(tab)[(3*.x-4):(3*.x-2)]))
+    
+    tab %>% 
+      reactable(
+        columns = ls.colDef,
+        columnGroups = ls.colGroup,
+        sortable = FALSE,
+        # searchable = TRUE,
+        bordered = TRUE,
+        # highlight = TRUE
+      )
     
   })
   
