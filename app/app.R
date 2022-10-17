@@ -660,6 +660,9 @@ body <- dashboardBody(
                         href = "mailto:dopfer@wisc.edu"),
                       ")")),
       
+      h2("Acknowledgments"),
+      p("This project would not have been possible without Dr. Gary Oetzel who provided the initial motivation to begin this project and whose previous work with analyzing health data in DairyComp was an essential starting place."),
+      
       h2("Example"),
       # Output: Download Example Data ----
       downloadButton("downloadExample", "Download Example Data"),
