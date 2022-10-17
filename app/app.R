@@ -243,7 +243,7 @@ body <- dashboardBody(
             
         ),
         
-        # box(title = "Coefficients Plot", width = NULL, solidHeader = TRUE, status = input_element_color,
+        # box(title = "Coefficient Plot", width = NULL, solidHeader = TRUE, status = input_element_color,
         #     collapsible = TRUE, collapsed = FALSE,
         #     
         #     plotlyOutput("plot2")
@@ -296,28 +296,27 @@ body <- dashboardBody(
             
 
         )
+      ),
+
+      ## Plots -----------------------------------------------------------------
+      column(
+        width = 6,
+        ## Plot
+        box(title = "Comparative Bar Plot", width = NULL, solidHeader = TRUE, status = input_element_color,
+            collapsible = TRUE, collapsed = FALSE,
+
+            plotlyOutput("plot3")
+
+        ),
+
+        box(title = "Coefficient Plot", width = NULL, solidHeader = TRUE, status = input_element_color,
+            collapsible = TRUE, collapsed = FALSE,
+
+            plotlyOutput("plot4")
+
+        )
+
       )
-      # ,
-      # 
-      # ## Plots -----------------------------------------------------------------
-      # column(
-      #   width = 6,
-      #   ## Plot
-      #   box(title = "Generalized Pairs Plot", width = NULL, solidHeader = TRUE, status = input_element_color,
-      #       collapsible = TRUE, collapsed = FALSE,
-      #       
-      #       plotlyOutput("plot1")
-      #       
-      #   ),
-      #   
-      #   # box(title = "Coefficients Plot", width = NULL, solidHeader = TRUE, status = input_element_color,
-      #   #     collapsible = TRUE, collapsed = FALSE,
-      #   #     
-      #   #     plotlyOutput("plot2")
-      #   #     
-      #   # )
-      #   
-      # )
       
     ),
     
@@ -1462,6 +1461,76 @@ server <- function(input, output) {
         bordered = TRUE,
         # highlight = TRUE
       )
+    
+  })
+  
+  output$plot3 <- renderPlotly({
+    gg <- 
+      df() %>% 
+      ggplot() +
+      geom_bar(aes(x = !!sym(input$row),
+                   fill = !!sym(input$column),
+                   color = !!sym(input$column),
+                   text = str_c("</br>", input$row, ": ", x,
+                                "</br>", input$column, ": ", color,
+                                "</br>Count: ", ..count..)),
+               position = position_dodge(width = 0.9, preserve = "single"),
+               alpha = 0.5) +
+      theme_bw()
+    
+    gg %>% 
+      ggplotly(tooltip = c("text")) %>% 
+      layout(autosize = TRUE, 
+             margin = list(l = 75,
+                           r = 75,
+                           b = 75,
+                           t = 75,
+                           pad = 10)) %>%
+      config(displaylogo = FALSE)
+    
+  })
+  
+  output$plot4 <- renderPlotly({
+    gg <- 
+      df_odds_ratio() %>% 
+      mutate_if(is.numeric, ~ ifelse(. < 0.0001, 0.0001, .)) %>% 
+      mutate_if(is.numeric, ~ ifelse(. > 9999, 9999, .)) %>% 
+      ggplot() +
+      geom_point(aes(y = OR,
+                     x = row,
+                     color = column,
+                     text = str_c("</br>Row: ", row,
+                                  "</br>Column: ", column,
+                                  "</br>OR: ", round(OR,3),
+                                  "</br>2.5%: ", round(`2.5%`,3),
+                                  "</br>97.5%: ", round(`97.5%`,3))),
+                 size = 2,
+                 alpha = 0.5,
+                 position = position_dodge(width = 0.5)) +
+      geom_linerange(aes(x = row,
+                         ymin = `2.5%`,
+                         ymax = `97.5%`,
+                         color = column,
+                         text = str_c("</br>Row: ", row,
+                                      "</br>Column: ", column,
+                                      "</br>OR: ", round(OR,3),
+                                      "</br>2.5%: ", round(`2.5%`,3),
+                                      "</br>97.5%: ", round(`97.5%`,3))),
+                     size = 2,
+                     alpha = 0.5,
+                     position = position_dodge(width = 0.5)) +
+      coord_flip() +
+      theme_bw()
+    
+    gg %>% 
+      ggplotly(tooltip = c("text")) %>% 
+      layout(autosize = TRUE, 
+             margin = list(l = 75,
+                           r = 75,
+                           b = 75,
+                           t = 75,
+                           pad = 10)) %>%
+      config(displaylogo = FALSE)
     
   })
   
