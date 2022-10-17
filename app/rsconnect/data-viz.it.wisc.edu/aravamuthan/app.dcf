@@ -5,8 +5,8 @@ account: aravamuthan
 server: data-viz.it.wisc.edu
 hostUrl: https://data-viz.it.wisc.edu/__api__
 appId: 421
-bundleId: 2365
+bundleId: 2375
 url: https://data-viz.it.wisc.edu/dairy-comp/
-when: 1665645364.38332
+when: 1665984327.78144
 asMultiple: FALSE
 asStatic: FALSE
