@@ -14,6 +14,7 @@ library(plotly)
 library(DT)
 library(skimr)
 # library(summarytools)
+library(nnet)
 
 df_example <- read_csv("example.csv")
 
@@ -43,6 +44,7 @@ sidebar <- dashboardSidebar(
   sidebarMenu(
     id = "sidebar",
     menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
+    menuItem("Pivot Table", tabName = "pivot", icon = icon("table")),
     menuItem("Regression Analysis", tabName = "regression", icon = icon("chart-line")),
     menuItem("GitHub Repo", icon = icon("file-code-o"), 
              href = "https://github.com/walleser/dairy-comp"),
@@ -211,7 +213,7 @@ body <- dashboardBody(
       ## Outputs ---------------------------------------------------------------
       column(
         width = 4,
-        ## Input
+        ## Output
         box(title = "Summary", width = NULL, solidHeader = TRUE, status = input_element_color,
             collapsible = TRUE, collapsed = FALSE,
             
@@ -219,7 +221,7 @@ body <- dashboardBody(
             
         ),
         
-        ## Input
+        ## Output
         box(title = "ANOVA", width = NULL, solidHeader = TRUE, status = input_element_color,
             collapsible = TRUE, collapsed = FALSE,
             
@@ -247,6 +249,70 @@ body <- dashboardBody(
         # )
         
       )
+      
+    ),
+    
+    ## Pivot Table -------------------------------------------------------------
+    tabItem(
+      tabName = "pivot",
+      ## Inputs ----------------------------------------------------------------
+      column(
+        width = 2,
+        ## Input
+        box(title = "Input", width = NULL, solidHeader = TRUE, status = input_element_color,
+            collapsible = TRUE, collapsed = FALSE,
+            
+            # Input: Row Variable ----------------------------------------------
+            uiOutput("row_ui"),
+            # Input: Column Variable -------------------------------------------
+            uiOutput("column_ui"),
+            
+            # Horizontal line ----
+            tags$hr()
+            
+        )
+      ),
+      
+      ## Outputs ---------------------------------------------------------------
+      column(
+        width = 4,
+        ## Input
+        box(title = "Pivot Table", width = NULL, solidHeader = TRUE, status = input_element_color,
+            collapsible = TRUE, collapsed = FALSE,
+            
+            tableOutput("pivot_table")
+            
+        ),
+
+        ## Input
+        box(title = "Odds Ratio", width = NULL, solidHeader = TRUE, status = input_element_color,
+            collapsible = TRUE, collapsed = FALSE,
+
+            tableOutput("odds_ratio")
+
+        )
+      )
+      # ,
+      # 
+      # ## Plots -----------------------------------------------------------------
+      # column(
+      #   width = 6,
+      #   ## Plot
+      #   box(title = "Generalized Pairs Plot", width = NULL, solidHeader = TRUE, status = input_element_color,
+      #       collapsible = TRUE, collapsed = FALSE,
+      #       
+      #       plotlyOutput("plot1")
+      #       
+      #   ),
+      #   
+      #   # box(title = "Coefficients Plot", width = NULL, solidHeader = TRUE, status = input_element_color,
+      #   #     collapsible = TRUE, collapsed = FALSE,
+      #   #     
+      #   #     plotlyOutput("plot2")
+      #   #     
+      #   # )
+      #   
+      # )
       
     ),
     
@@ -1006,17 +1072,6 @@ server <- function(input, output) {
   #                        graph.magnif = 0.8)
   #   })
   
-  df_mod <- reactive({
-    req(
-      input$file1,
-      df(),
-      cancelOutput = TRUE
-    )
-    
-    df()
-    
-  })
-  
   output$downloadData  <- downloadHandler(
     filename = str_c(make_clean_names(str_c(input$farm_name, "master_last_lact", sep = "_")), ".csv"),
     content = function(file) {
@@ -1033,18 +1088,18 @@ server <- function(input, output) {
   
   output$response_ui <- renderUI({
     cols <- 
-      df_mod() %>% 
+      df() %>% 
       names()
     
     cols_date <- 
-      df_mod() %>% 
+      df() %>% 
       select_if(lubridate::is.Date) %>% 
       names()
     
     cols_multinomial <- 
-      df_mod() %>% 
+      df() %>% 
       select_if(is.factor) %>% 
-      select_if(~ length(levels(.)) != 2) %>% 
+      select_if(~ nlevels(.) != 2) %>% 
       names()
     
     selectInput(
@@ -1058,11 +1113,11 @@ server <- function(input, output) {
   
   output$explanatory_ui <- renderUI({
     cols <- 
-      df_mod() %>% 
+      df() %>% 
       names()
     
     cols_date <- 
-      df_mod() %>% 
+      df() %>% 
       select_if(lubridate::is.Date) %>% 
       names()
     
@@ -1102,16 +1157,16 @@ server <- function(input, output) {
     )
     
     cond <- 
-      df_mod() %>% 
+      df() %>% 
       select(!!! input$response) %>% 
       summarize_all(is.numeric) %>% 
       pull()
     
     if(cond) {
-      mod <- lm(f(), data = df_mod())
+      mod <- lm(f(), data = df())
     }
     else {
-      mod <- glm(f(), data = df_mod(), family = binomial)
+      mod <- glm(f(), data = df(), family = binomial)
     }
     
     mod
@@ -1133,7 +1188,7 @@ server <- function(input, output) {
   
   output$plot1 <- renderPlotly({
     gg <- 
-      df_mod() %>% 
+      df() %>% 
       select(!!!c(input$response, input$explanatory)) %>% 
       GGally::ggpairs(
         upper = "blank",
@@ -1167,6 +1222,152 @@ server <- function(input, output) {
   #   plotly::ggplotly(gg)
   #   
   # })
+  
+  output$row_ui <- renderUI({
+    cols <- 
+      df() %>% 
+      names()
+    
+    cols_factor <- 
+      df() %>% 
+      select_if(is.factor) %>% 
+      names()
+    
+    cols_multinomial <- 
+      df() %>% 
+      select_if(is.factor) %>% 
+      select_if(~ nlevels(.) >= 2) %>% 
+      names()
+    
+    selectInput(
+      'row',
+      'Select Row Variable',
+      choices = cols_multinomial,
+      selected = "CSEX",
+      # multiple = TRUE
+    )
+  })
+  
+  output$column_ui <- renderUI({
+    cols <- 
+      df() %>% 
+      names()
+    
+    cols_factor <- 
+      df() %>% 
+      select_if(is.factor) %>% 
+      names()
+
+    cols_multinomial <- 
+      df() %>% 
+      select_if(is.factor) %>% 
+      select_if(~ nlevels(.) >= 2) %>% 
+      names()
+    
+    selectInput(
+      'column',
+      'Select Column Variable',
+      choices = cols_multinomial,
+      selected = "CLIVE",
+      # multiple = TRUE
+    )
+  })
+  
+  output$pivot_table <- renderTable({
+    req(
+      input$file1,
+      input$row,
+      input$column,
+      df(),
+      cancelOutput = TRUE
+    )
+    
+    df() %>% 
+      tabyl(!! sym(input$row), !! sym(input$column)) %>% 
+      adorn_totals(c("row", "col")) %>% 
+      adorn_percentages("col") %>% 
+      adorn_pct_formatting(rounding = "half up", 
+                           digits = 1) %>% 
+      adorn_ns(position = "front") %>% 
+      adorn_title("combined", 
+                  row_name = input$row, 
+                  col_name = input$column) %>% 
+      as.data.frame()
+    
+  })
+  
+  output$odds_ratio <- renderTable({
+    req(
+      input$file1,
+      input$row,
+      input$column,
+      df(),
+      cancelOutput = TRUE
+    )
+    
+    f <- 
+      input$column %>% 
+      str_c(input$row, sep = " ~ ") %>% 
+      as.formula()
+    
+    mod <- multinom(f, data = df())
+    
+    nlevels.col <- 
+      df() %>% 
+      summarize(nlevels(!!sym(input$column))) %>% 
+      pull()
+    
+    if(nlevels.col == 2){
+      
+      level.col <- 
+        df() %>% 
+        summarize(levels(!!sym(input$column))) %>% 
+        slice(n()) %>% 
+        pull()
+      
+      coef.mod <- 
+        mod %>% 
+        coef() %>% 
+        exp() %>% 
+        as.data.frame() %>% 
+        rename_all(~ str_c("OR %.", input$column, level.col))
+      
+      confint.mod <- 
+        mod %>% 
+        confint() %>% 
+        exp() %>% 
+        as.data.frame() %>% 
+        rename_all(~ str_c(., ".", input$column, level.col))
+      
+    } else{
+      
+      coef.mod <- 
+        mod %>% 
+        coef() %>% 
+        t() %>% 
+        exp() %>% 
+        as.data.frame() %>% 
+        rename_all(~ str_c("OR %.", input$column, .))
+      
+      confint.mod <- 
+        mod %>% 
+        confint() %>% 
+        exp() %>% 
+        as.data.frame() %>% 
+        rename_all(~ str_replace(., " %\\.", str_c(" %\\.", input$column)))
+    }
+    
+    coef.mod %>% 
+      bind_cols(confint.mod) %>% 
+      rownames_to_column(var = "row") %>% 
+      filter(row != "(Intercept)") %>% 
+      pivot_longer(-row) %>% 
+      separate(name, c("conf.level", "column"), sep = " %.") %>% 
+      pivot_wider(names_from = conf.level,
+                  values_from = value) %>% 
+      rename_at(vars(`2.5`, `97.5`), ~ str_c(., "%"))
+    
+  })
   
 }
 
