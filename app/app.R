@@ -266,8 +266,10 @@ body <- dashboardBody(
             
             # Input: Row Variable ----------------------------------------------
             uiOutput("row_ui"),
+            uiOutput("ref_row_ui"),
             # Input: Column Variable -------------------------------------------
             uiOutput("column_ui"),
+            uiOutput("ref_column_ui"),
             
             # Horizontal line ----
             tags$hr()
@@ -1328,6 +1330,21 @@ server <- function(input, output) {
     )
   })
   
+  output$ref_row_ui <- renderUI({
+    levels_row <- 
+      df() %>% 
+      summarize(levels(!!sym(input$row))) %>% 
+      pull()
+    
+    selectInput(
+      'ref_row',
+      'Select Reference Level of Row Variable',
+      choices = levels_row,
+      selected = levels_row[1],
+      # multiple = TRUE
+    )
+  })
+  
   output$column_ui <- renderUI({
     cols <- 
       df() %>% 
@@ -1353,16 +1370,35 @@ server <- function(input, output) {
     )
   })
   
+  output$ref_column_ui <- renderUI({
+    levels_column <- 
+      df() %>% 
+      summarize(levels(!!sym(input$column))) %>% 
+      pull()
+    
+    selectInput(
+      'ref_column',
+      'Select Reference Level of Column Variable',
+      choices = levels_column,
+      selected = levels_column[1],
+      # multiple = TRUE
+    )
+  })
+  
   df_pivot_table <- reactive({
     req(
       input$file1,
       input$row,
       input$column,
+      input$ref_row,
+      input$ref_column,
       df(),
       cancelOutput = TRUE
     )
     
     df() %>% 
+      mutate(!!input$row := fct_relevel(!!sym(input$row), input$ref_row),
+             !!input$column := fct_relevel(!!sym(input$column), input$ref_column)) %>% 
       tabyl(!!sym(input$row), !!sym(input$column)) %>% 
       adorn_totals(c("row", "col")) %>% 
       as.data.frame() %>% 
@@ -1375,6 +1411,8 @@ server <- function(input, output) {
       input$file1,
       input$row,
       input$column,
+      input$ref_row,
+      input$ref_column,
       df_pivot_table(),
       cancelOutput = TRUE
     )
@@ -1416,6 +1454,8 @@ server <- function(input, output) {
       input$file1,
       input$row,
       input$column,
+      input$ref_row,
+      input$ref_column,
       df(),
       cancelOutput = TRUE
     )
@@ -1425,17 +1465,22 @@ server <- function(input, output) {
       str_c(input$row, sep = " ~ ") %>% 
       as.formula()
     
-    mod <- multinom(f, data = df())
+    df_mod <- 
+      df() %>% 
+      mutate(!!input$row := fct_relevel(!!sym(input$row), input$ref_row),
+             !!input$column := fct_relevel(!!sym(input$column), input$ref_column))
+    
+    mod <- multinom(f, data = df_mod)
     
     nlevels.col <- 
-      df() %>% 
+      df_mod %>% 
       summarize(nlevels(!!sym(input$column))) %>% 
       pull()
     
     if(nlevels.col == 2){
       
       level.col <- 
-        df() %>% 
+        df_mod %>% 
         summarize(levels(!!sym(input$column))) %>% 
         slice(n()) %>% 
         pull()
@@ -1470,6 +1515,7 @@ server <- function(input, output) {
         exp() %>% 
         as.data.frame() %>% 
         rename_all(~ str_replace(., " %\\.", str_c(" %\\.", input$column)))
+      
     }
     
     coef.mod %>% 
@@ -1489,13 +1535,20 @@ server <- function(input, output) {
       input$file1,
       input$row,
       input$column,
+      input$ref_row,
+      input$ref_column,
       df(),
       df_odds_ratio(),
       cancelOutput = TRUE
     )
     
-    level.col <- 
+    df_mod <- 
       df() %>% 
+      mutate(!!input$row := fct_relevel(!!sym(input$row), input$ref_row),
+             !!input$column := fct_relevel(!!sym(input$column), input$ref_column))
+    
+    level.col <- 
+      df_mod %>% 
       summarize(levels(!!sym(input$column))) %>% 
       pull()
     
