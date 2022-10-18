@@ -243,12 +243,12 @@ body <- dashboardBody(
             
         ),
         
-        # box(title = "Coefficient Plot", width = NULL, solidHeader = TRUE, status = input_element_color,
-        #     collapsible = TRUE, collapsed = FALSE,
-        #     
-        #     plotlyOutput("plot2")
-        #     
-        # )
+        box(title = "Coefficient Plot", width = NULL, solidHeader = TRUE, status = input_element_color,
+            collapsible = TRUE, collapsed = FALSE,
+
+            plotlyOutput("plot2")
+
+        )
         
       )
       
@@ -309,7 +309,7 @@ body <- dashboardBody(
 
         ),
 
-        box(title = "Coefficient Plot", width = NULL, solidHeader = TRUE, status = input_element_color,
+        box(title = "Forest Plot", width = NULL, solidHeader = TRUE, status = input_element_color,
             collapsible = TRUE, collapsed = FALSE,
 
             plotlyOutput("plot4")
@@ -1165,7 +1165,7 @@ server <- function(input, output) {
     
     cond <- 
       df() %>% 
-      select(!!! input$response) %>% 
+      select(!!sym(input$response)) %>% 
       summarize_all(is.numeric) %>% 
       pull()
     
@@ -1196,7 +1196,7 @@ server <- function(input, output) {
   output$plot1 <- renderPlotly({
     gg <- 
       df() %>% 
-      select(!!!c(input$response, input$explanatory)) %>% 
+      select(c(input$response, input$explanatory)) %>% 
       GGally::ggpairs(
         upper = "blank",
         diag = list(continuous = GGally::wrap("barDiag", fill = "#8F0000", color = "#8F0000", alpha = 0.5),
@@ -1219,6 +1219,36 @@ server <- function(input, output) {
     
   })
   
+  df_coef <- reactive({
+    req(
+      input$file1,
+      input$response,
+      input$explanatory,
+      f(),
+      mod(),
+      df(),
+      cancelOutput = TRUE
+    )
+    
+    mod() %>% 
+      coef() %>% 
+      as.data.frame() %>% 
+      rename_all(~ "Parameter Estimate") %>% 
+      bind_cols(
+        mod() %>% 
+          confint() %>% 
+          as.data.frame()
+      ) %>% 
+      rownames_to_column(var = "row") %>% 
+      filter(row != "(Intercept)") %>% 
+      mutate(`Explanatory Variable` = str_match(row, str_c(input$explanatory, collapse = "|"))) %>% 
+      mutate_if(is.numeric, ~ ifelse(is.na(.), 0, .)) %>% 
+      mutate_if(is.numeric, ~ ifelse(. < 0.0001, 0.0001, .)) %>% 
+      mutate_if(is.numeric, ~ ifelse(. > 9999, 9999, .)) %>% 
+      rename_all(~ str_replace(., " %", "%"))
+    
+  })
+  
   # output$plot2 <- renderPlotly({
   #   gg <- 
   #     mod() %>% 
@@ -1229,6 +1259,49 @@ server <- function(input, output) {
   #   plotly::ggplotly(gg)
   #   
   # })
+  
+  output$plot2 <- renderPlotly({
+    gg <-
+      df_coef() %>% 
+      ggplot() +
+      geom_point(aes(y = `Parameter Estimate`,
+                     x = `Explanatory Variable`,
+                     color = `Explanatory Variable`,
+                     group = row,
+                     text = str_c("</br>Term: ", row,
+                                  "</br>Parameter Estimate: ", round(`Parameter Estimate`,3),
+                                  "</br>2.5%: ", round(`2.5%`,3),
+                                  "</br>97.5%: ", round(`97.5%`,3))),
+                 size = 2,
+                 alpha = 0.5,
+                 position = position_dodge(width = 0.5)) +
+      geom_linerange(aes(x = `Explanatory Variable`,
+                         ymin = `2.5%`,
+                         ymax = `97.5%`,
+                         color = `Explanatory Variable`,
+                         group = row,
+                         text = str_c("</br>Term: ", row,
+                                      "</br>Parameter Estimate: ", round(`Parameter Estimate`,3),
+                                      "</br>2.5%: ", round(`2.5%`,3),
+                                      "</br>97.5%: ", round(`97.5%`,3))),
+                     size = 2,
+                     alpha = 0.5,
+                     # lineend = "round",
+                     position = position_dodge(width = 0.5)) +
+      coord_flip() +
+      theme_bw()
+    
+    gg %>% 
+      ggplotly(tooltip = c("text")) %>% 
+      layout(autosize = TRUE, 
+             margin = list(l = 75,
+                           r = 75,
+                           b = 75,
+                           t = 75,
+                           pad = 10)) %>%
+      config(displaylogo = FALSE)
+
+  })
   
   output$row_ui <- renderUI({
     cols <- 
@@ -1310,16 +1383,16 @@ server <- function(input, output) {
     
     df_pivot_table() %>% 
       reactable(
-        # columns = list(
-        #   row = colDef(name = input$row,
-        #                style = list(fontWeight = "bold"))
-        # ),
+        columns = list(
+          row = colDef(name = input$row,
+                       style = list(fontWeight = "bold"))
+        ),
         columnGroups = list(
           colGroup(name = input$column, columns = names(.)[-1])
         ),
         defaultColDef = colDef(
           cell = color_tiles(
-            tab, 
+            df_pivot_table(), 
             span = TRUE, 
             colors = pal, 
             opacity = 0.75
@@ -1327,12 +1400,12 @@ server <- function(input, output) {
         ),
         sortable = FALSE,
         bordered = TRUE,
-      ) %>% 
+      ) %>%
       add_legend(
-        tab,
-        col_name = 'Total', 
-        title = 'title', 
-        footer = 'footer', 
+        df_pivot_table(),
+        col_name = 'Total',
+        title = 'title',
+        footer = 'footer',
         colors = pal
       )
     
@@ -1434,7 +1507,8 @@ server <- function(input, output) {
                   values_from = ` OR`:`97.5%`) %>% 
       select(row, sort(current_vars())) %>% 
       rename_at(vars(-row), ~ str_replace(., " OR", "OR")) %>% 
-      mutate(row = str_replace_all(row, input$row, str_c(input$row, ": ")))
+      mutate(row = str_replace_all(row, input$row, str_c(input$row, ": "))) %>% 
+      mutate_if(is.numeric, ~ signif(., digits = 4))
     
     ls.colDef <- 
       2:(length(names(tab))) %>% 
@@ -1493,6 +1567,7 @@ server <- function(input, output) {
   output$plot4 <- renderPlotly({
     gg <- 
       df_odds_ratio() %>% 
+      mutate_if(is.numeric, ~ ifelse(is.na(.), 0, .)) %>% 
       mutate_if(is.numeric, ~ ifelse(. < 0.0001, 0.0001, .)) %>% 
       mutate_if(is.numeric, ~ ifelse(. > 9999, 9999, .)) %>% 
       ggplot() +
