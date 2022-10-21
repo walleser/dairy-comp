@@ -817,6 +817,21 @@ server <- function(input, output) {
       # paste together remark and protocol
       mutate(Remark = glue("{Remark}_{Protocols}")) %>% 
       select(-Protocols) %>% 
+      #remove lagged events
+      mutate(Date_lag = lubridate::mdy(Date)) %>%
+      group_by(ID,LACT,Event) %>% 
+      mutate(diff = Date_lag - lag(Date_lag, 1),
+             diff_2 = Date_lag - lag(Date_lag,2),
+             diff_3 = Date_lag - lag(Date_lag,3),
+             diff_4 = Date_lag - lag(Date_lag,4)) %>% 
+      ungroup() %>%
+      #this can be used to make specific requirements by event...
+      mutate(drop_extra = case_when(diff <= lubridate::days(3)~0,
+                                    TRUE ~ 1)
+      ) %>% 
+      filter(drop_extra == 1) %>% 
+      select(-c(starts_with("diff"),drop_extra,Date_lag)) %>%
+      #filtering events
       filter(Event %in% rows_events) %>% 
       group_by(ID, LACT, Event) %>% 
       # append event number
