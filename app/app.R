@@ -707,6 +707,23 @@ server <- function(input, output) {
     
   })
   
+  # # A queue of notification IDs
+  # ids <- character(0)
+  # # A counter
+  # n <- 0
+  # 
+  # observeEvent(input$file1, {
+  #   id <- showNotification("Please wait for application to process the data and generate the output.",
+  #                          duration = NULL,
+  #                          type = "warning")
+  # })
+  
+  # observeEvent(df(), {
+  #   if (length(ids) > 0)
+  #     removeNotification(ids[1])
+  #   ids <<- ids[-1]
+  # })
+  
   ## Reactive elements ---------------------------------------------------------
   df <- reactive({
     req(
@@ -716,6 +733,9 @@ server <- function(input, output) {
       # input$quote,
       cancelOutput = TRUE
     )
+    
+    id <- showNotification("Reading data...", duration = NULL, closeButton = FALSE)
+    on.exit(removeNotification(id), add = TRUE)
     
     cols <- 
       c("ID" = NA, 
@@ -817,21 +837,6 @@ server <- function(input, output) {
       # paste together remark and protocol
       mutate(Remark = glue("{Remark}_{Protocols}")) %>% 
       select(-Protocols) %>% 
-      #remove lagged events
-      mutate(Date_lag = lubridate::mdy(Date)) %>%
-      group_by(ID,LACT,Event) %>% 
-      mutate(diff = Date_lag - lag(Date_lag, 1),
-             diff_2 = Date_lag - lag(Date_lag,2),
-             diff_3 = Date_lag - lag(Date_lag,3),
-             diff_4 = Date_lag - lag(Date_lag,4)) %>% 
-      ungroup() %>%
-      #this can be used to make specific requirements by event...
-      mutate(drop_extra = case_when(diff <= lubridate::days(3)~0,
-                                    TRUE ~ 1)
-      ) %>% 
-      filter(drop_extra == 1) %>% 
-      select(-c(starts_with("diff"),drop_extra,Date_lag)) %>%
-      #filtering events
       filter(Event %in% rows_events) %>% 
       group_by(ID, LACT, Event) %>% 
       # append event number
