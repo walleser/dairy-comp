@@ -1071,7 +1071,7 @@ server <- function(input, output) {
   output$contents <- 
     DT::renderDataTable(
       {
-        head(df())
+        head(df(), n = 100)
       }, 
       options = list(scrollX = TRUE)
     )
