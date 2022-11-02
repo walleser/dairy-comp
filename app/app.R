@@ -149,8 +149,13 @@ body <- dashboardBody(
                       placeholder = "DairyComp 9000"),
             
             # Input: DairyComp Extraction ----
-            dateInput("dairy_comp_extraction_date", "DairyComp Extraction Data",
+            dateInput("dairy_comp_extraction_date", "DairyComp Extraction Date",
                       value = as.character(lubridate::today()), 
+                      format = "mm/dd/yy"),
+            
+            # Input: Filter Earliest Fresh Date ----
+            dateInput("fresh_date_filter", "Earliest Fresh Date for Analysis",
+                      value = as.character(lubridate::today()- lubridate::period(num = 1, units = "year")), 
                       format = "mm/dd/yy"),
             
             # Horizontal line ----
@@ -855,6 +860,8 @@ server <- function(input, output) {
       # drop na
       # filter(!is.na(FRESH)) %>%
       filter(LACT > 0) %>% 
+      #filter out fresh dates before filter
+      filter(lubridate::mdy(FDAT) >= input$fresh_date_filter) %>%
       mutate_at(vars(ends_with("_Date")), lubridate::mdy) %>%
       mutate_at(vars(ends_with("_Remark")), as.character) %>%
       # rowwise count of all events
