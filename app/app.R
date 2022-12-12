@@ -30,12 +30,12 @@ regular_color <- "navy"
 # darker red #8b0037
 
 header <- dashboardHeader(
-  title = "DairyComp 9000",
+  title = "DairyCoPilot",
   tags$li(a(href = "https://github.com/walleser/dairy-comp",
             img(
               # src = "https://hr.wisc.edu/wp-content/uploads/2019/04/uw-crest-red-300x300.png",
               src = "download (1).jpg",
-              title = "DairyComp 9000", height = "50px"
+              title = "DairyCoPilot", height = "50px"
             ),
             style = "padding-top:0px; padding-bottom:0px;"),
           class = "dropdown")
@@ -145,17 +145,17 @@ body <- dashboardBody(
             # Input: Farm Name ----
             textInput("farm_name", "Farm Name",
                       # value = "",
-                      value = "DairyComp 9000",
-                      placeholder = "DairyComp 9000"),
+                      value = "DairyCoPilot",
+                      placeholder = "DairyCoPilot"),
             
-            # Input: DairyComp Extraction ----
+            # Input: DairyComp Extraction Date ----
             dateInput("dairy_comp_extraction_date", "DairyComp Extraction Date",
                       value = as.character(lubridate::today()), 
                       format = "mm/dd/yy"),
             
-            # Input: Filter Earliest Fresh Date ----
-            dateInput("fresh_date_filter", "Earliest Fresh Date for Analysis",
-                      value = as.character(lubridate::today()- lubridate::period(num = 1, units = "year")), 
+            # Input: Earliest Fresh Date ----
+            dateInput("earliest_fresh_date", "Earliest Fresh Date for Analysis",
+                      value = as.character(lubridate::today() - lubridate::period(num = 1, units = "year")), 
                       format = "mm/dd/yy"),
             
             # Horizontal line ----
@@ -331,7 +331,7 @@ body <- dashboardBody(
     tabItem(
       tabName = "documentation",
       h2("Methodology"),
-      div("This documentation provides instructions to generate a CSV file for analysis using DairyComp 9000. Please refer to the ", a("DC305 reference guide", href = "https://dc-help.vas.com/ReferenceGuide/Home-DC305RefGuide.htm"), " for additional information regarding DairyCOMP305 structure and usage."),
+      div("This documentation provides instructions to generate a CSV file for analysis using DairyCoPilot. Please refer to the ", a("DC305 reference guide", href = "https://dc-help.vas.com/ReferenceGuide/Home-DC305RefGuide.htm"), " for additional information regarding DairyCOMP305 structure and usage."),
       
       tags$ol(
         tags$li("Open DairyCOMP305 desktop application. Note the last date when records were updated. If a backup copy is used from another dairy, this may not be the current date."),
@@ -591,7 +591,7 @@ body <- dashboardBody(
           tags$li("Save as CSV. Do not save as XLS."),
           tags$li("Choose location and file name for CSV.")
         ),
-        tags$li("The downloaded CSV is now ready to be analyzed using DairyComp 9000.")
+        tags$li("The downloaded CSV is now ready to be analyzed using DairyCoPilot.")
       ),
       
       h2("Glossary"),
@@ -860,8 +860,8 @@ server <- function(input, output) {
       # drop na
       # filter(!is.na(FRESH)) %>%
       filter(LACT > 0) %>% 
-      #filter out fresh dates before filter
-      filter(lubridate::mdy(FDAT) >= input$fresh_date_filter) %>%
+      # filter out fresh dates
+      filter(lubridate::mdy(FDAT) >= input$earliest_fresh_date) %>%
       mutate_at(vars(ends_with("_Date")), lubridate::mdy) %>%
       mutate_at(vars(ends_with("_Remark")), as.character) %>%
       # rowwise count of all events
