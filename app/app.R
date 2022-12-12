@@ -836,6 +836,9 @@ server <- function(input, output) {
           )
       ) %>% 
       filter(Event != 'NA') %>%
+      # transform 0 to NA
+      mutate_at(vars(FTDIM,FSTPJ,FSTBF,FSTPR,PEAKM,DCAR,PR305), ~ifelse(. == "0", NA, .)) %>% 
+      mutate(LOG1 = ifelse(is.na(FSTPJ), NA, LOG1)) %>% 
       # add missing columns
       add_column(!!!cols[!names(cols) %in% names(.)]) %>% 
       select(!!!names(.)[names(.) %in% names(cols)]) %>% 
