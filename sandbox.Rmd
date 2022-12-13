@@ -14,6 +14,10 @@ library(glue)
 library(forcats)
 library(lubridate)
 library(janitor)
+library(reactable)
+library(reactablefmtr)
+library(plotly)
+library(nnet)
 
 ```
 
@@ -46,6 +50,11 @@ setdiff(col_names,cols)
 
 
 ```{r}
+f <- function(prev, curr, roll = 3) {
+  if_else(as.numeric(curr - prev) > roll, curr, prev) %>%
+    lubridate::as_date()
+}
+
 cols <- 
   c("ID" = NA, 
     "LACT" = NA, 
@@ -109,8 +118,21 @@ rows_events <-
 
 ```
 
+
+
 ```{r}
-df %>% 
+df <- 
+  df %>% 
+  mutate(Date = lubridate::mdy(Date)) %>% 
+  group_by(ID, LACT, Event) %>% 
+  arrange(ID, LACT, Event, Date) %>% 
+  mutate(
+    x = Date,
+    x = purrr::accumulate(x, f) %>% 
+      lubridate::as_date()
+  ) %>% 
+  ungroup() %>% 
+  distinct(ID, LACT, Event, x, .keep_all = TRUE) %>% 
   mutate(
     Event = 
       case_when(
@@ -133,6 +155,9 @@ df %>%
       )
   ) %>% 
   filter(Event != 'NA') %>%
+  # transform 0 to NA
+  mutate_at(vars(FTDIM,FSTPJ,FSTBF,FSTPR,PEAKM,DCAR,PR305), ~ifelse(. == "0", NA, .)) %>% 
+  mutate(LOG1 = ifelse(is.na(FSTPJ), NA, LOG1)) %>% 
   # add missing columns
   add_column(!!!cols[!names(cols) %in% names(.)]) %>% 
   select(!!!names(.)[names(.) %in% names(cols)]) %>% 
