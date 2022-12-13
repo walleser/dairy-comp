@@ -742,6 +742,11 @@ server <- function(input, output) {
     id <- showNotification("Reading data...", duration = NULL, closeButton = FALSE)
     on.exit(removeNotification(id), add = TRUE)
     
+    f <- function(prev, curr, roll = 3) {
+      if_else(as.numeric(curr - prev) > roll, curr, prev) %>%
+        lubridate::as_date()
+    }
+    
     cols <- 
       c("ID" = NA, 
         "LACT" = NA, 
@@ -814,6 +819,16 @@ server <- function(input, output) {
     df <- read_csv(file = input$file1$datapath, guess_max = 100000)
     
     df %>% 
+      mutate(Date = lubridate::mdy(Date)) %>% 
+      group_by(ID, LACT, Event) %>% 
+      arrange(ID, LACT, Event, Date) %>% 
+      mutate(
+        x = Date,
+        x = purrr::accumulate(x, f) %>% 
+          lubridate::as_date()
+      ) %>% 
+      ungroup() %>% 
+      distinct(ID, LACT, Event, x, .keep_all = TRUE) %>% 
       mutate(
         Event = 
           case_when(
