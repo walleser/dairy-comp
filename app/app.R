@@ -828,6 +828,7 @@ server <- function(input, output) {
           lubridate::as_date()
       ) %>% 
       ungroup() %>% 
+      mutate(Date = as.character(Date)) %>% 
       distinct(ID, LACT, Event, x, .keep_all = TRUE) %>% 
       mutate(
         Event = 
