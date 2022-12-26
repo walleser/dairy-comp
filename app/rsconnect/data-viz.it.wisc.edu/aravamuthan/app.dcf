@@ -5,8 +5,8 @@ account: aravamuthan
 server: data-viz.it.wisc.edu
 hostUrl: https://data-viz.it.wisc.edu/__api__
 appId: 421
-bundleId: 2542
+bundleId: 2572
 url: https://data-viz.it.wisc.edu/dairy-copilot/
-when: 1670937313.43555
+when: 1672053138.70465
 asMultiple: FALSE
 asStatic: FALSE
