@@ -819,17 +819,17 @@ server <- function(input, output) {
     df <- read_csv(file = input$file1$datapath, guess_max = 100000)
     
     df %>% 
-      mutate(Date = lubridate::mdy(Date)) %>% 
-      group_by(ID, LACT, Event) %>% 
-      arrange(ID, LACT, Event, Date) %>% 
-      mutate(
-        x = Date,
-        x = purrr::accumulate(x, f) %>% 
-          lubridate::as_date()
-      ) %>% 
-      ungroup() %>% 
-      mutate(Date = as.character(Date)) %>% 
-      distinct(ID, LACT, Event, x, .keep_all = TRUE) %>% 
+      # mutate(Date = lubridate::mdy(Date)) %>% 
+      # group_by(ID, LACT, Event) %>% 
+      # arrange(ID, LACT, Event, Date) %>% 
+      # mutate(
+      #   x = Date,
+      #   x = purrr::accumulate(x, f) %>% 
+      #     lubridate::as_date()
+      # ) %>% 
+      # ungroup() %>% 
+      # mutate(Date = as.character(Date)) %>% 
+      # distinct(ID, LACT, Event, x, .keep_all = TRUE) %>% 
       mutate(
         Event = 
           case_when(
@@ -1151,7 +1151,7 @@ server <- function(input, output) {
       select_if(lubridate::is.Date) %>% 
       names()
     
-    cols_multinomial <- 
+    cols_nonbinomial <- 
       df() %>% 
       select_if(is.factor) %>% 
       select_if(~ nlevels(.) != 2) %>% 
@@ -1160,7 +1160,7 @@ server <- function(input, output) {
     selectInput(
       'response',
       'Select Response Variable',
-      choices = cols[!(cols %in% c(cols_date, cols_multinomial))],
+      choices = cols[!(cols %in% c(cols_date, cols_nonbinomial))],
       # selected = cols,
       # multiple = TRUE
     )
@@ -1176,10 +1176,16 @@ server <- function(input, output) {
       select_if(lubridate::is.Date) %>% 
       names()
     
+    cols_uninomial <- 
+      df() %>% 
+      select_if(is.factor) %>% 
+      select_if(~ nlevels(.) == 1) %>% 
+      names()
+    
     selectInput(
       'explanatory',
       'Select Explanatory Variable(s)',
-      choices = cols[!(cols %in% c(input$response, cols_date))],
+      choices = cols[!(cols %in% c(input$response, cols_date, cols_uninomial))],
       # selected = cols,
       multiple = TRUE
     )
