@@ -918,10 +918,10 @@ server <- function(input, output) {
       select(-c(SOLD_1_Date,SOLD_1_Remark,DIED_1_Date,DIED_1_Remark)) %>% 
       filter(!is.na(BDAT),
              !is.na(FDAT),
-             !is.na(FCDAT)) %>% 
+             !is.na(FCDAT)) %>%
       filter(str_length(BDAT) == 8,
-             str_length(FDAT) == 8,
-             str_length(FCDAT) == 8) %>% 
+             str_length(FDAT) == 8) %>%
+      mutate(FCDAT = ifelse(str_length(FCDAT) != 8,NA,FCDAT)) %>%
       mutate_at(vars(ID,RC), forcats::as_factor) %>% 
       mutate_at(vars(BDAT,FDAT,FCDAT), lubridate::mdy) %>%
       mutate_at(vars(CLIVE,CSEX), as.character) %>%
