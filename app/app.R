@@ -917,8 +917,7 @@ server <- function(input, output) {
       ) %>% 
       select(-c(SOLD_1_Date,SOLD_1_Remark,DIED_1_Date,DIED_1_Remark)) %>% 
       filter(!is.na(BDAT),
-             !is.na(FDAT),
-             !is.na(FCDAT)) %>%
+             !is.na(FDAT)) %>%
       filter(str_length(BDAT) == 8,
              str_length(FDAT) == 8) %>%
       mutate(FCDAT = ifelse(str_length(FCDAT) != 8,NA,FCDAT)) %>%
