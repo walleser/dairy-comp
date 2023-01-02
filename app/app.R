@@ -528,7 +528,7 @@ body <- dashboardBody(
                 tags$td(align = "left", "88"),
                 tags$td(align = "left", "1"),
                 tags$td(align = "left", "1"),
-                tags$td(align = "left", "Log SCC on previous test day")
+                tags$td(align = "left", "Log SCC on first test day")
               )
               
             )
@@ -580,7 +580,7 @@ body <- dashboardBody(
           ),
           tags$li("Select optional REM pattern."),
           tags$ol(
-            tags$li("Click OK.")
+            tags$li("1.	Select default 'none' by clicking 'OK'")
           ),
           tags$li("This may take a few minutes.")
         ),
