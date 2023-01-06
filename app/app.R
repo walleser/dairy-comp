@@ -580,7 +580,7 @@ body <- dashboardBody(
           ),
           tags$li("Select optional REM pattern."),
           tags$ol(
-            tags$li("1.	Select default 'none' by clicking 'OK'")
+            tags$li("Select default 'none' by clicking 'OK'")
           ),
           tags$li("This may take a few minutes.")
         ),
@@ -916,11 +916,9 @@ server <- function(input, output) {
           )
       ) %>% 
       select(-c(SOLD_1_Date,SOLD_1_Remark,DIED_1_Date,DIED_1_Remark)) %>% 
-      filter(!is.na(BDAT),
-             !is.na(FDAT)) %>%
-      filter(((str_length(BDAT) >= 8) & (str_length(BDAT) <= 10)),
-             ((str_length(FDAT) >= 8) & (str_length(FDAT) <= 10))) %>%
-      mutate(FCDAT = ifelse(((str_length(FCDAT) >= 8) & (str_length(FCDAT) <= 10)),NA,FCDAT)) %>%
+      filter(between(str_length(BDAT), 8, 10),
+             between(str_length(FDAT), 8, 10)) %>% 
+      mutate(FCDAT = ifelse(between(str_length(FCDAT), 8, 10), NA, FCDAT)) %>% 
       mutate_at(vars(ID,RC), forcats::as_factor) %>% 
       mutate_at(vars(BDAT,FDAT,FCDAT), lubridate::mdy) %>%
       mutate_at(vars(CLIVE,CSEX), as.character) %>%
