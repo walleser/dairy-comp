@@ -220,7 +220,7 @@ df <-
   select(-c(SOLD_1_Date,SOLD_1_Remark,DIED_1_Date,DIED_1_Remark)) %>% 
   filter(between(str_length(BDAT), 8, 10),
          between(str_length(FDAT), 8, 10)) %>% 
-  mutate(FCDAT = ifelse(between(str_length(FCDAT), 8, 10), NA, FCDAT)) %>% 
+  mutate(FCDAT = ifelse(between(str_length(FCDAT), 8, 10), FCDAT, NA)) %>% 
   mutate_at(vars(ID,RC), forcats::as_factor) %>% 
   mutate_at(vars(BDAT,FDAT,FCDAT), lubridate::mdy) %>%
   mutate_at(vars(CLIVE,CSEX), as.character) %>%
