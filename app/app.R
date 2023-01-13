@@ -918,7 +918,7 @@ server <- function(input, output) {
       select(-c(SOLD_1_Date,SOLD_1_Remark,DIED_1_Date,DIED_1_Remark)) %>% 
       filter(between(str_length(BDAT), 8, 10),
              between(str_length(FDAT), 8, 10)) %>% 
-      mutate(FCDAT = ifelse(between(str_length(FCDAT), 8, 10), FCDAT, NA)) %>% 
+      mutate(FCDAT = ifelse(between(str_length(FCDAT), 8, 10), NA, FCDAT)) %>% 
       mutate_at(vars(ID,RC), forcats::as_factor) %>% 
       mutate_at(vars(BDAT,FDAT,FCDAT), lubridate::mdy) %>%
       mutate_at(vars(CLIVE,CSEX), as.character) %>%
@@ -1082,9 +1082,9 @@ server <- function(input, output) {
             TRUE ~ 0
           )
       ) %>% 
-      group_by(ID) %>% 
-      slice_max(LACT) %>% 
-      ungroup() %>% 
+      # group_by(ID) %>% 
+      # slice_max(LACT) %>% 
+      # ungroup() %>% 
       mutate_at(vars(CLIVE, CSEX, CALF_SEX, FRESH_MONTH, `FRESH 372 TO 7`:`FRESH 425 TO 60`, ABORT, `CALVING_EASE_>=2`:`CALVING_EASE_>=3`, TWINS:STILLBIRTH, MALE_CALF, FPR:`ILLMISC<=60`, -ends_with("_DIM")), forcats::as_factor) %>% 
       mutate_at(vars(RC, CLIVE, CSEX, CALF_SEX, FRESH_MONTH), ~ forcats::fct_relevel(., sort(levels(.)))) %>% 
       mutate_at(vars(`FRESH 372 TO 7`:`FRESH 425 TO 60`, ABORT, `CALVING_EASE_>=2`:`CALVING_EASE_>=3`, TWINS:STILLBIRTH, MALE_CALF, FPR:`ILLMISC<=60`, -ends_with("_DIM")), ~ forcats::fct_relevel(., c("0", "1")))
