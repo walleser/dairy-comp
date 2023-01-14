@@ -1587,7 +1587,7 @@ server <- function(input, output) {
       separate(name, c("conf.level", "column"), sep = " %.") %>% 
       pivot_wider(names_from = conf.level,
                   values_from = value) %>% 
-      rename_at(vars(`2.5`, `97.5`), ~ str_c(., "%"))
+      rename_at(vars(ncol(.) - 1, ncol(.)), ~ str_c(., "%"))
     
   })
   
@@ -1619,7 +1619,7 @@ server <- function(input, output) {
       rename(` OR` = OR) %>% 
       pivot_wider(names_from = column,
                   names_glue = "{column} {.value}",
-                  values_from = ` OR`:`97.5%`) %>% 
+                  values_from = c(` OR`, ends_with("%"))) %>% 
       select(row, sort(current_vars())) %>% 
       rename_at(vars(-row), ~ str_replace(., " OR", "OR")) %>% 
       mutate(row = str_replace_all(row, input$row, str_c(input$row, ": "))) %>% 
@@ -1682,9 +1682,11 @@ server <- function(input, output) {
   output$plot4 <- renderPlotly({
     gg <- 
       df_odds_ratio() %>% 
+      rename(lower = ncol(.) - 1,
+             upper = ncol(.)) %>% 
       mutate_if(is.numeric, ~ ifelse(is.na(.), 0, .)) %>% 
-      mutate_if(is.numeric, ~ ifelse(. < 0.0001, 0.0001, .)) %>% 
-      mutate_if(is.numeric, ~ ifelse(. > 9999, 9999, .)) %>% 
+      mutate_if(is.numeric, ~ ifelse(. < 0.001, 0.001, .)) %>% 
+      mutate_if(is.numeric, ~ ifelse(. > 1000, 1000, .)) %>% 
       ggplot() +
       geom_point(aes(y = OR,
                      x = row,
@@ -1692,20 +1694,20 @@ server <- function(input, output) {
                      text = str_c("</br>Row: ", row,
                                   "</br>Column: ", column,
                                   "</br>OR: ", round(OR,3),
-                                  "</br>2.5%: ", round(`2.5%`,3),
-                                  "</br>97.5%: ", round(`97.5%`,3))),
+                                  "</br>", (100-input$conf_level)/2 , "%: ", round(lower,3),
+                                  "</br>", 100-(100-input$conf_level)/2 , "%: ", round(upper,3))),
                  size = 2,
                  alpha = 0.5,
                  position = position_dodge(width = 0.5)) +
       geom_linerange(aes(x = row,
-                         ymin = `2.5%`,
-                         ymax = `97.5%`,
+                         ymin = lower,
+                         ymax = upper,
                          color = column,
                          text = str_c("</br>Row: ", row,
                                       "</br>Column: ", column,
                                       "</br>OR: ", round(OR,3),
-                                      "</br>2.5%: ", round(`2.5%`,3),
-                                      "</br>97.5%: ", round(`97.5%`,3))),
+                                      "</br>", (100-input$conf_level)/2 , "%: ", round(lower,3),
+                                      "</br>", 100-(100-input$conf_level)/2 , "%: ", round(upper,3))),
                      size = 2,
                      alpha = 0.5,
                      position = position_dodge(width = 0.5)) +
