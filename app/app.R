@@ -1192,7 +1192,7 @@ server <- function(input, output) {
     selectInput(
       'response',
       'Select Response Variable',
-      choices = cols[!(cols %in% c(cols_date, cols_nonbinomial))],
+      choices = cols[!(cols %in% c("ID", cols_date, cols_nonbinomial))],
       # selected = cols,
       # multiple = TRUE
     )
@@ -1217,7 +1217,7 @@ server <- function(input, output) {
     selectInput(
       'explanatory',
       'Select Explanatory Variable(s)',
-      choices = cols[!(cols %in% c(input$response, cols_date, cols_uninomial))],
+      choices = cols[!(cols %in% c("ID", input$response, cols_date, cols_uninomial))],
       # selected = cols,
       multiple = TRUE
     )
@@ -1392,15 +1392,18 @@ server <- function(input, output) {
   output$row_ui <- renderUI({
     cols <- 
       df() %>% 
+      select(-ID) %>% 
       names()
     
     cols_factor <- 
       df() %>% 
+      select(-ID) %>% 
       select_if(is.factor) %>% 
       names()
     
     cols_multinomial <- 
       df() %>% 
+      select(-ID) %>% 
       select_if(is.factor) %>% 
       select_if(~ nlevels(.) >= 2) %>% 
       names()
@@ -1432,15 +1435,18 @@ server <- function(input, output) {
   output$column_ui <- renderUI({
     cols <- 
       df() %>% 
+      select(-ID) %>% 
       names()
     
     cols_factor <- 
       df() %>% 
+      select(-ID) %>% 
       select_if(is.factor) %>% 
       names()
 
     cols_multinomial <- 
       df() %>% 
+      select(-ID) %>% 
       select_if(is.factor) %>% 
       select_if(~ nlevels(.) >= 2) %>% 
       names()
