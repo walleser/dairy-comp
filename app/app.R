@@ -112,6 +112,30 @@ body <- dashboardBody(
         ## Input
         box(title = "Input", width = NULL, solidHeader = TRUE, status = input_element_color,
             collapsible = TRUE, collapsed = FALSE,
+            # Input: Farm Name ----
+            textInput("farm_name", "Farm Name",
+                      # value = "",
+                      value = "DairyCoPilot",
+                      placeholder = "DairyCoPilot"),
+            
+            # Input: DairyComp Extraction Date ----
+            dateInput("dairy_comp_extraction_date", "DairyComp Extraction Date",
+                      value = as.character(lubridate::today()), 
+                      format = "mm/dd/yy"),
+            
+            # Input: Earliest Fresh Date ----
+            dateInput("earliest_fresh_date", "Earliest Fresh Date for Analysis",
+                      value = as.character(lubridate::today() - lubridate::period(num = 1, units = "year")), 
+                      format = "mm/dd/yy"),
+            
+            # Input: Latest Fresh Date ----
+            dateInput("latest_fresh_date", "Latest Fresh Date for Analysis",
+                      value = as.character(lubridate::today()), 
+                      format = "mm/dd/yy"),
+            
+            # Horizontal line ----
+            tags$hr(),
+            
             # Input: Select a file ----
             fileInput("file1", "Choose CSV File",
                       multiple = FALSE,
@@ -138,30 +162,6 @@ body <- dashboardBody(
             #                          "Double Quote" = '"',
             #                          "Single Quote" = "'"),
             #              selected = '"'),
-            
-            # Horizontal line ----
-            tags$hr(),
-            
-            # Input: Farm Name ----
-            textInput("farm_name", "Farm Name",
-                      # value = "",
-                      value = "DairyCoPilot",
-                      placeholder = "DairyCoPilot"),
-            
-            # Input: DairyComp Extraction Date ----
-            dateInput("dairy_comp_extraction_date", "DairyComp Extraction Date",
-                      value = as.character(lubridate::today()), 
-                      format = "mm/dd/yy"),
-            
-            # Input: Earliest Fresh Date ----
-            dateInput("earliest_fresh_date", "Earliest Fresh Date for Analysis",
-                      value = as.character(lubridate::today() - lubridate::period(num = 1, units = "year")), 
-                      format = "mm/dd/yy"),
-            
-            # Input: Latest Fresh Date ----
-            dateInput("latest_fresh_date", "Latest Fresh Date for Analysis",
-                      value = as.character(lubridate::today()), 
-                      format = "mm/dd/yy"),
             
             # Horizontal line ----
             tags$hr(),
