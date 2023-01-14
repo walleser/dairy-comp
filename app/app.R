@@ -279,6 +279,17 @@ body <- dashboardBody(
             # Horizontal line ----
             tags$hr()
             
+        ),
+        
+        box(title = "Advanced Input", width = NULL, solidHeader = TRUE, status = input_element_color,
+            collapsible = TRUE, collapsed = TRUE,
+            
+            # Input: Confidence Level ------------------------------------------
+            numericInput("conf_level", "Confidence Level", 95, min = 1, max = 100, step = 1),
+            
+            # Horizontal line ----
+            tags$hr()
+            
         )
       ),
       
@@ -1505,6 +1516,7 @@ server <- function(input, output) {
       input$column,
       input$ref_row,
       input$ref_column,
+      input$conf_level,
       df(),
       cancelOutput = TRUE
     )
@@ -1543,7 +1555,7 @@ server <- function(input, output) {
       
       confint.mod <- 
         mod %>% 
-        confint() %>% 
+        confint(level = input$conf_level/100) %>% 
         exp() %>% 
         as.data.frame() %>% 
         rename_all(~ str_c(., ".", input$column, level.col))
@@ -1560,7 +1572,7 @@ server <- function(input, output) {
       
       confint.mod <- 
         mod %>% 
-        confint() %>% 
+        confint(level = input$conf_level/100) %>% 
         exp() %>% 
         as.data.frame() %>% 
         rename_all(~ str_replace(., " %\\.", str_c(" %\\.", input$column)))
@@ -1586,6 +1598,7 @@ server <- function(input, output) {
       input$column,
       input$ref_row,
       input$ref_column,
+      input$conf_level,
       df(),
       df_odds_ratio(),
       cancelOutput = TRUE
