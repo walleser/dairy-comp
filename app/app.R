@@ -158,6 +158,11 @@ body <- dashboardBody(
                       value = as.character(lubridate::today() - lubridate::period(num = 1, units = "year")), 
                       format = "mm/dd/yy"),
             
+            # Input: Latest Fresh Date ----
+            dateInput("latest_fresh_date", "Latest Fresh Date for Analysis",
+                      value = as.character(lubridate::today()), 
+                      format = "mm/dd/yy"),
+            
             # Horizontal line ----
             tags$hr(),
             
@@ -168,6 +173,23 @@ body <- dashboardBody(
             tags$hr()
             
         )
+        # ,
+        # 
+        # box(title = "Advanced Input", width = NULL, solidHeader = TRUE, status = input_element_color,
+        #     collapsible = TRUE, collapsed = TRUE,
+        #     
+        #     # Input: Start Date ------------------------------------------------
+        #     dateInput("start_date", "Start Date",
+        #               value = as.character(lubridate::today() - lubridate::period(num = 1, units = "year")), 
+        #               format = "mm/dd/yy"),
+        #     # Input: End Date --------------------------------------------------
+        #     dateInput("end_date", "End Date",
+        #               value = as.character(lubridate::today()), 
+        #               format = "mm/dd/yy"),
+        #     # Horizontal line ----
+        #     tags$hr()
+        #     
+        # )
       ),
       
       ## Outputs ---------------------------------------------------------------
@@ -830,6 +852,7 @@ server <- function(input, output) {
     df <- read_csv(file = input$file1$datapath, guess_max = 100000)
     
     df %>% 
+      # filter(between(lubridate::mdy(Date), input$start_date, input$end_date)) %>% 
       # mutate(Date = lubridate::mdy(Date)) %>% 
       # group_by(ID, LACT, Event) %>% 
       # arrange(ID, LACT, Event, Date) %>% 
@@ -891,7 +914,8 @@ server <- function(input, output) {
       # filter(!is.na(FRESH)) %>%
       filter(LACT > 0) %>% 
       # filter out fresh dates
-      filter(lubridate::mdy(FDAT) >= input$earliest_fresh_date) %>%
+      # filter(lubridate::mdy(FDAT) >= input$earliest_fresh_date) %>%
+      filter(between(lubridate::mdy(FDAT), input$earliest_fresh_date, input$latest_fresh_date)) %>%
       mutate_at(vars(ends_with("_Date")), lubridate::mdy) %>%
       mutate_at(vars(ends_with("_Remark")), as.character) %>%
       # rowwise count of all events
@@ -1305,8 +1329,8 @@ server <- function(input, output) {
       filter(row != "(Intercept)") %>% 
       mutate(`Explanatory Variable` = str_match(row, str_c(input$explanatory, collapse = "|"))) %>% 
       mutate_if(is.numeric, ~ ifelse(is.na(.), 0, .)) %>% 
-      mutate_if(is.numeric, ~ ifelse(. < 0.0001, 0.0001, .)) %>% 
-      mutate_if(is.numeric, ~ ifelse(. > 9999, 9999, .)) %>% 
+      mutate_if(is.numeric, ~ ifelse(. < 0.001, 0.001, .)) %>% 
+      mutate_if(is.numeric, ~ ifelse(. > 1000, 1000, .)) %>% 
       rename_all(~ str_replace(., " %", "%"))
     
   })
