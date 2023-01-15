@@ -4,6 +4,7 @@ library(shiny)
 library(shinydashboard)
 library(scales)
 library(tidyverse)
+library(tidyr)
 library(janitor)
 library(lubridate)
 library(glue)
@@ -1494,6 +1495,7 @@ server <- function(input, output) {
     df() %>% 
       mutate(!!input$row := fct_relevel(!!sym(input$row), input$ref_row),
              !!input$column := fct_relevel(!!sym(input$column), input$ref_column)) %>% 
+      drop_na(!!sym(input$row), !!sym(input$column)) %>% 
       tabyl(!!sym(input$row), !!sym(input$column)) %>% 
       adorn_totals(c("row", "col")) %>% 
       as.data.frame() %>% 
@@ -1569,7 +1571,8 @@ server <- function(input, output) {
     df_mod <- 
       df() %>% 
       mutate(!!input$row := fct_relevel(!!sym(input$row), input$ref_row),
-             !!input$column := fct_relevel(!!sym(input$column), input$ref_column))
+             !!input$column := fct_relevel(!!sym(input$column), input$ref_column)) %>% 
+      drop_na(!!sym(input$row), !!sym(input$column))
     
     mod <- multinom(f, data = df_mod)
     
@@ -1696,6 +1699,7 @@ server <- function(input, output) {
   output$plot3 <- renderPlotly({
     gg <- 
       df() %>% 
+      drop_na(!!sym(input$row), !!sym(input$column)) %>% 
       ggplot() +
       geom_bar(aes(x = !!sym(input$row),
                    fill = !!sym(input$column),
