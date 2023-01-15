@@ -1234,8 +1234,13 @@ server <- function(input, output) {
     
     input$explanatory %>% 
       str_flatten(collapse = " + ") %>% 
-      str_c(input$response, ., sep = " ~ ") %>% 
+      str_c("`", input$response, "`", " ~ ", .) %>% 
       as.formula()
+
+    # input$explanatory %>% 
+    #   str_flatten(collapse = " + ") %>% 
+    #   str_c(input$response, ., sep = " ~ ") %>% 
+    #   as.formula()
     
   })
     
@@ -1553,9 +1558,14 @@ server <- function(input, output) {
     
     f <- 
       input$column %>% 
-      str_c(input$row, sep = " ~ ") %>% 
+      str_c("`", ., "`", " ~ ", "`", input$row, "`") %>% 
       as.formula()
     
+    # f <- 
+    #   input$column %>% 
+    #   str_c(input$row, sep = " ~ ") %>% 
+    #   as.formula()
+
     df_mod <- 
       df() %>% 
       mutate(!!input$row := fct_relevel(!!sym(input$row), input$ref_row),
