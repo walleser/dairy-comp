@@ -988,6 +988,8 @@ server <- function(input, output) {
           `CALVING_EASE_>=2` = ifelse(EASE >= 2, 1, 0),
           `CALVING_EASE_>=3` = ifelse(EASE >= 3, 1, 0),
           CNUM = ifelse((CNUM != 0) | (EASE == 0), CNUM, NA),
+          CSEX = ifelse(!is.na(CNUM),CSEX, NA),
+          CLIVE = ifelse(!is.na(CNUM),CLIVE, NA),
           TWINS = 
             case_when(
               CNUM > 1 ~ 1,
