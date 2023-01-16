@@ -1191,7 +1191,7 @@ server <- function(input, output) {
   #   })
   
   output$downloadData  <- downloadHandler(
-    filename = str_c(make_clean_names(str_c(input$farm_name, "master_last_lact", sep = "_")), ".csv"),
+    filename = str_c(make_clean_names(str_c(input$farm_name, "cleaned_data", sep = "_")), ".csv"),
     content = function(file) {
       write.csv(df(), file, row.names = FALSE)
     }
