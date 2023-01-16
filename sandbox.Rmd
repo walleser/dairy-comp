@@ -123,6 +123,7 @@ rows_events <-
 ```{r}
 df <-
   df %>% 
+  # filter(between(lubridate::mdy(Date), input$start_date, input$end_date)) %>% 
   # mutate(Date = lubridate::mdy(Date)) %>% 
   # group_by(ID, LACT, Event) %>% 
   # arrange(ID, LACT, Event, Date) %>% 
@@ -183,6 +184,9 @@ df <-
   # drop na
   # filter(!is.na(FRESH)) %>%
   filter(LACT > 0) %>% 
+  # filter out fresh dates
+  # filter(lubridate::mdy(FDAT) >= input$earliest_fresh_date) %>%
+  # filter(between(lubridate::mdy(FDAT), input$earliest_fresh_date, input$latest_fresh_date)) %>%
   mutate_at(vars(ends_with("_Date")), lubridate::mdy) %>%
   mutate_at(vars(ends_with("_Remark")), as.character) %>%
   # rowwise count of all events
@@ -220,11 +224,11 @@ df <-
   select(-c(SOLD_1_Date,SOLD_1_Remark,DIED_1_Date,DIED_1_Remark)) %>% 
   filter(between(str_length(BDAT), 8, 10),
          between(str_length(FDAT), 8, 10)) %>% 
-  mutate(FCDAT = ifelse(between(str_length(FCDAT), 8, 10), FCDAT, NA)) %>% 
-  mutate_at(vars(ID,RC), forcats::as_factor) %>% 
-  mutate_at(vars(BDAT,FDAT,FCDAT), lubridate::mdy) %>%
-  mutate_at(vars(CLIVE,CSEX), as.character) %>%
-  mutate_at(vars(FSTBF,FSTPR,PEAKM,DRYLG,LOG1,LACT,DDRY,PDCC,PDIM,EASE,CNUM), as.numeric) %>%
+  mutate(FCDAT = ifelse(between(str_length(FCDAT), 8, 10), NA, FCDAT)) %>% 
+  mutate_at(vars(ID, RC), forcats::as_factor) %>% 
+  mutate_at(vars(BDAT, FDAT, FCDAT), lubridate::mdy) %>%
+  mutate_at(vars(CLIVE, CSEX, Technician), as.character) %>%
+  mutate_at(vars(LACT, FTDIM, FSTPJ, FSTBF, FSTPR, PEAKM, DCAR, PR305, DRYLG, LOG1, LACT, DDRY, PDCC, PDIM, EASE, CNUM), as.numeric) %>%
   mutate(
     LCTGP = 
       ifelse(LACT >= 3, 3, LACT) %>% 
@@ -244,6 +248,8 @@ df <-
     `CALVING_EASE_>=2` = ifelse(EASE >= 2, 1, 0),
     `CALVING_EASE_>=3` = ifelse(EASE >= 3, 1, 0),
     CNUM = ifelse((CNUM != 0) | (EASE == 0), CNUM, NA),
+    CSEX = ifelse(!is.na(CNUM), CSEX, NA),
+    CLIVE = ifelse(!is.na(CNUM), CLIVE, NA),
     TWINS = 
       case_when(
         CNUM > 1 ~ 1,
@@ -384,16 +390,15 @@ df <-
         TRUE ~ 0
       )
   ) %>% 
-  group_by(ID) %>% 
-  slice_max(LACT) %>% 
-  ungroup() %>% 
-  mutate_at(vars(CLIVE, CSEX, CALF_SEX, FRESH_MONTH, `FRESH 372 TO 7`:`FRESH 425 TO 60`, ABORT, `CALVING_EASE_>=2`:`CALVING_EASE_>=3`, TWINS:STILLBIRTH, MALE_CALF, FPR:`ILLMISC<=60`, -ends_with("_DIM")), forcats::as_factor) %>% 
+  # group_by(ID) %>% 
+  # slice_max(LACT) %>% 
+  # ungroup() %>% 
+  mutate_at(vars(ends_with("_DIM")), as.numeric) %>%
+  mutate_at(vars(CLIVE, CSEX, CALF_SEX, FRESH_MONTH, `FRESH 372 TO 7`:`FRESH 425 TO 60`, ABORT, `CALVING_EASE_>=2`:`CALVING_EASE_>=3`, TWINS:STILLBIRTH, MALE_CALF, `FPR>1.4`:`ILLMISC<=60`, -ends_with("_DIM")), forcats::as_factor) %>% 
   mutate_at(vars(RC, CLIVE, CSEX, CALF_SEX, FRESH_MONTH), ~ forcats::fct_relevel(., sort(levels(.)))) %>% 
-  mutate_at(vars(`FRESH 372 TO 7`:`FRESH 425 TO 60`, ABORT, `CALVING_EASE_>=2`:`CALVING_EASE_>=3`, TWINS:STILLBIRTH, MALE_CALF, FPR:`ILLMISC<=60`, -ends_with("_DIM")), ~ forcats::fct_relevel(., c("0", "1")))
+  mutate_at(vars(`FRESH 372 TO 7`:`FRESH 425 TO 60`, ABORT, `CALVING_EASE_>=2`:`CALVING_EASE_>=3`, TWINS:STILLBIRTH, MALE_CALF, `FPR>1.4`:`ILLMISC<=60`, -ends_with("_DIM")), ~ forcats::fct_relevel(., c("0", "1")))
 # %>%
 #   write_csv(str_c(make_clean_names(str_c(output_file_header, "master_last_lact", sep = "_")), ".csv"))
 
 ```
-
-
 
