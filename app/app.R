@@ -886,7 +886,10 @@ server <- function(input, output) {
               Event == 'RP' ~ 'RP',
               Event == 'METR' ~ 'METR',
               Event == 'KETOSIS' ~ 'KETOSIS',
+              #convert RDA and LDA to single event
               Event == 'DA' ~ 'DA',
+              Event == 'LDA' ~ 'DA',
+              Event == 'RDA' ~ 'DA',
               Event == 'PNEU' ~ 'PNEU',
               Event == 'SCOURS' ~ 'DIARHEA',
               Event == 'LAME' ~ 'LAME',
