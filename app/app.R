@@ -886,7 +886,7 @@ server <- function(input, output) {
               Event == 'RP' ~ 'RP',
               Event == 'METR' ~ 'METR',
               Event == 'KETOSIS' ~ 'KETOSIS',
-              #convert RDA and LDA to single event
+              # convert RDA and LDA to single event
               Event == 'DA' ~ 'DA',
               Event == 'LDA' ~ 'DA',
               Event == 'RDA' ~ 'DA',
@@ -1193,13 +1193,15 @@ server <- function(input, output) {
   #                        graph.magnif = 0.8)
   #   })
   
+  # Output: Download Clean Data ----
   output$downloadData  <- downloadHandler(
-    filename = str_c(make_clean_names(str_c(input$farm_name, "cleaned_data", sep = "_")), ".csv"),
+    filename = str_c(make_clean_names(str_c(input$farm_name, "clean_data", sep = "_")), ".csv"),
     content = function(file) {
       write.csv(df(), file, row.names = FALSE)
     }
   )
-  
+
+  # Output: Download Example Data ----
   output$downloadExample  <- downloadHandler(
     filename = "example.csv",
     content = function(file) {
@@ -1207,6 +1209,7 @@ server <- function(input, output) {
     }
   )
   
+  # Output: Response UI Select Input ----
   output$response_ui <- renderUI({
     cols <- 
       df() %>% 
@@ -1232,6 +1235,7 @@ server <- function(input, output) {
     )
   })
   
+  # Output: Explanatory UI Select Input ----
   output$explanatory_ui <- renderUI({
     cols <- 
       df() %>% 
@@ -1306,12 +1310,14 @@ server <- function(input, output) {
     
   })
   
+  # Output: Summary Table ----
   output$summary <- renderTable({
     mod() %>% 
       broom::tidy()
     
   })
 
+  # Output: ANOVA Table ----
   output$anova <- renderTable({
     mod() %>% 
       anova() %>% 
@@ -1319,6 +1325,7 @@ server <- function(input, output) {
     
   })
   
+  # Output: Generalized Pairs Plot ----
   output$plot1 <- renderPlotly({
     gg <- 
       df() %>% 
@@ -1386,6 +1393,7 @@ server <- function(input, output) {
   #   
   # })
   
+  # Output: Coefficient Plot ----
   output$plot2 <- renderPlotly({
     gg <-
       df_coef() %>% 
@@ -1429,6 +1437,7 @@ server <- function(input, output) {
 
   })
   
+  # Output: Row UI Select Input ----
   output$row_ui <- renderUI({
     cols <- 
       df() %>% 
@@ -1457,6 +1466,7 @@ server <- function(input, output) {
     )
   })
   
+  # Output: Reference Row UI Select Input ----
   output$ref_row_ui <- renderUI({
     levels_row <- 
       df() %>% 
@@ -1472,6 +1482,7 @@ server <- function(input, output) {
     )
   })
   
+  # Output: Column UI Select Input ----
   output$column_ui <- renderUI({
     cols <- 
       df() %>% 
@@ -1500,6 +1511,7 @@ server <- function(input, output) {
     )
   })
   
+  # Output: Reference Column UI Select Input ----
   output$ref_column_ui <- renderUI({
     levels_column <- 
       df() %>% 
@@ -1515,6 +1527,7 @@ server <- function(input, output) {
     )
   })
   
+  # Pivot Table Data Frame ----
   df_pivot_table <- reactive({
     req(
       input$file1,
@@ -1537,6 +1550,7 @@ server <- function(input, output) {
     
   })
   
+  # Output: Pivot Table ----
   output$pivot_table <- renderReactable({
     req(
       input$file1,
@@ -1580,6 +1594,7 @@ server <- function(input, output) {
     
   })
   
+  # Odds Ratio Data Frame ----
   df_odds_ratio <- reactive({
     req(
       input$file1,
@@ -1668,6 +1683,7 @@ server <- function(input, output) {
     
   })
   
+  # Output: Odds Ratio Table ----
   output$odds_ratio <- renderReactable({
     req(
       input$file1,
@@ -1730,6 +1746,7 @@ server <- function(input, output) {
     
   })
   
+  # Output: Comparative Bar Plot ----
   output$plot3 <- renderPlotly({
     gg <- 
       df() %>% 
@@ -1757,6 +1774,7 @@ server <- function(input, output) {
     
   })
   
+  # Output: Forest Plot ----
   output$plot4 <- renderPlotly({
     gg <- 
       df_odds_ratio() %>% 
