@@ -896,6 +896,12 @@ server <- function(input, output) {
               Event == 'FOOTRIM' ~ 'FOOTRIM',
               Event == 'ILLMISC' ~ 'ILLMISC',
               Event == 'MAST' ~ 'MAST',
+              # convert alternative codes to single event
+              Event == 'MET' ~ 'METR',
+              Event == 'KET' ~ 'KETOSIS',
+              Event == 'DIARRH' ~ 'DIARHEA',
+              Event == 'FOOTRMK' ~ 'FOOTRIM',
+              Event == 'TRIM' ~ 'FOOTRIM',
               TRUE ~ Event
             )
         ) %>% 
@@ -907,8 +913,8 @@ server <- function(input, output) {
         add_column(!!!cols[!names(cols) %in% names(.)]) %>% 
         select(!!!names(.)[names(.) %in% names(cols)]) %>% 
         # paste together remark and protocol
-        mutate(Remark = glue("{Remark}_{Protocols}")) %>% 
-        select(-Protocols) %>% 
+        mutate(Remark = glue("{Remark}_{Protocols}_{Technician}")) %>% 
+        select(-Protocols, -Technician) %>% 
         filter(Event %in% rows_events) %>% 
         group_by(ID, LACT, Event) %>% 
         # append event number
@@ -970,7 +976,8 @@ server <- function(input, output) {
         mutate(FCDAT = ifelse(between(str_length(FCDAT), 8, 10), NA, FCDAT)) %>% 
         mutate_at(vars(ID, RC), forcats::as_factor) %>% 
         mutate_at(vars(BDAT, FDAT, FCDAT), lubridate::mdy) %>%
-        mutate_at(vars(CLIVE, CSEX, Technician), as.character) %>%
+        mutate_at(vars(CLIVE, CSEX), as.character) %>%
+        # mutate_at(vars(Technician), as.character) %>%
         mutate_at(vars(LACT, FTDIM, FSTPJ, FSTBF, FSTPR, PEAKM, DCAR, PR305, DRYLG, LOG1, LACT, DDRY, PDCC, PDIM, EASE, CNUM), as.numeric) %>%
         mutate(
           LCTGP = 
@@ -1147,7 +1154,7 @@ server <- function(input, output) {
         df %>% 
         mutate_at(vars(BDAT, FDAT, FCDAT, BIRTH_DATE), lubridate::mdy) %>%
         mutate_at(vars(ends_with("_Date"), starts_with("DAT")), lubridate::mdy) %>%
-        mutate_at(vars(Technician), as.character) %>%
+        # mutate_at(vars(Technician), as.character) %>%
         mutate_at(vars(ends_with("_Remark"), starts_with("REM")), as.character) %>%
         mutate_at(vars(FTDIM, FSTPJ, FSTBF, FSTPR, PEAKM, DCAR, PR305, DRYLG, LOG1, LACT, DDRY, PDCC, PDIM, EASE, CNUM, XMF:XILL, DIM, `AGE_AT_CALVING_(MONTHS)`:`AGE_AT_CALVING_1ST_LACT_(MONTHS)`, FPR), as.numeric) %>%
         mutate_at(vars(ends_with("_DIM")), as.numeric) %>%
