@@ -147,12 +147,20 @@ df <-
         Event == 'METR' ~ 'METR',
         Event == 'KETOSIS' ~ 'KETOSIS',
         Event == 'DA' ~ 'DA',
+        Event == 'LDA' ~ 'DA',
+        Event == 'RDA' ~ 'DA',
+        Event == 'DA' ~ 'DA',
         Event == 'PNEU' ~ 'PNEU',
         Event == 'SCOURS' ~ 'DIARHEA',
         Event == 'LAME' ~ 'LAME',
         Event == 'FOOTRIM' ~ 'FOOTRIM',
         Event == 'ILLMISC' ~ 'ILLMISC',
         Event == 'MAST' ~ 'MAST',
+        Event == 'MET' ~ 'METR',
+        Event == 'KET' ~ 'KETOSIS',
+        Event == 'DIARRH' ~ 'DIARHEA',
+        Event == 'FOOTRMK' ~ 'FOOTRIM',
+        Event == 'TRIM' ~ 'FOOTRIM',
         TRUE ~ Event
       )
   ) %>% 
@@ -164,8 +172,8 @@ df <-
   add_column(!!!cols[!names(cols) %in% names(.)]) %>% 
   select(!!!names(.)[names(.) %in% names(cols)]) %>% 
   # paste together remark and protocol
-  mutate(Remark = glue("{Remark}_{Protocols}")) %>% 
-  select(-Protocols) %>% 
+  mutate(Remark = glue("{Remark}_{Protocols}_{Technician}")) %>% 
+  select(-Protocols, -Technician) %>% 
   filter(Event %in% rows_events) %>% 
   group_by(ID, LACT, Event) %>% 
   # append event number
@@ -227,7 +235,8 @@ df <-
   mutate(FCDAT = ifelse(between(str_length(FCDAT), 8, 10), NA, FCDAT)) %>% 
   mutate_at(vars(ID, RC), forcats::as_factor) %>% 
   mutate_at(vars(BDAT, FDAT, FCDAT), lubridate::mdy) %>%
-  mutate_at(vars(CLIVE, CSEX, Technician), as.character) %>%
+  mutate_at(vars(CLIVE, CSEX), as.character) %>%
+  # mutate_at(vars(Technician), as.character) %>%
   mutate_at(vars(LACT, FTDIM, FSTPJ, FSTBF, FSTPR, PEAKM, DCAR, PR305, DRYLG, LOG1, LACT, DDRY, PDCC, PDIM, EASE, CNUM), as.numeric) %>%
   mutate(
     LCTGP = 
